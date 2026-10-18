@@ -10,20 +10,20 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done. Complete phases in order;
 
 - [x] **0.1** Create GitHub repo `VendorBridge-X-Kagnus`; add `.gitignore`, MIT/none license, branch `main`
 - [x] **0.2** Create `docs/` and add `prd.md`, `architecture.md`, `rules.md`, `design.md`, `tasks.md`, `memory.md`
-- [ ] **0.3** Scaffold `server/` (Express + TS, ts-node-dev/tsx, ESLint, Prettier)
-- [ ] **0.4** Scaffold `client/` (Vite + React + TS, Tailwind, React Router, TanStack Query)
-- [ ] **0.5** `docker-compose.yml` with PostgreSQL; `.env.example` files for root/server/client
-- [ ] **0.6** Husky + lint-staged; npm scripts (`dev`, `build`, `lint`, `test`, `db:migrate`, `db:seed`)
-- [ ] **0.7** Env parsing with Zod; `/api/v1/health` endpoint including DB check
+- [x] **0.3** Scaffold `server/` (Express + TS, ts-node-dev/tsx, ESLint, Prettier)
+- [x] **0.4** Scaffold `client/` (Vite + React + TS, Tailwind, React Router, TanStack Query)
+- [x] **0.5** `docker-compose.yml` with PostgreSQL; `.env.example` files for root/server/client
+- [x] **0.6** Husky + lint-staged; npm scripts (`dev`, `build`, `lint`, `test`, `db:migrate`, `db:seed`)
+- [x] **0.7** Env parsing with Zod; `/api/v1/health` endpoint including DB check
 
 **Exit:** `docker compose up`, both apps start, health returns ok.
 
 ## Phase 1 — Database and Seed (≈ 0.5 day)
 
-- [ ] **1.1** Prisma schema: `User`, `Session`, `PasswordResetToken`, `Vendor`, `AuditLog`, enums
-- [ ] **1.2** Initial migration; partial unique index on `Vendor.gstNumber` where `deletedAt IS NULL`
-- [ ] **1.3** Seed script: 1 user per role (documented credentials, dev only), ~25 vendors across Active/Pending/Blocked and several categories
-- [ ] **1.4** Prisma client singleton; audit log service (insert-only)
+- [x] **1.1** Prisma schema: `User`, `Session`, `PasswordResetToken`, `Vendor`, `AuditLog`, enums
+- [x] **1.2** Initial migration; partial unique index on `Vendor.gstNumber` where `deletedAt IS NULL`
+- [x] **1.3** Seed script: 1 user per role (documented credentials, dev only), ~25 vendors across Active/Pending/Blocked and several categories
+- [x] **1.4** Prisma client singleton; audit log service (insert-only)
 
 **Exit:** migration applies cleanly; seed populates data.
 

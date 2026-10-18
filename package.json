@@ -1,0 +1,31 @@
+{
+  "name": "vendorbridge-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VendorBridge — Procurement & Vendor Management ERP (Week 1)",
+  "scripts": {
+    "dev": "npm run dev --prefix server",
+    "dev:all": "npx concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "dev:client": "npm run dev --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "build": "npm run build --prefix server && npm run build --prefix client",
+    "lint": "npm run lint --prefix server && npm run lint --prefix client",
+    "test": "npm run test --prefix server",
+    "db:migrate": "npm run db:migrate --prefix server",
+    "db:deploy": "npm run db:deploy --prefix server",
+    "db:generate": "npm run db:generate --prefix server",
+    "db:seed": "npm run db:seed --prefix server",
+    "db:studio": "npm run db:studio --prefix server"
+  },
+  "keywords": [
+    "procurement",
+    "vendor-management",
+    "erp",
+    "express",
+    "react",
+    "prisma",
+    "postgresql"
+  ],
+  "author": "",
+  "license": "MIT"
+}

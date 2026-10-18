@@ -34,9 +34,18 @@
 ---
 
 ## Current Task Status
-- **Current Phase:** Phase 0 — Project Setup
+- **Current Phase:** Phase 2 — Backend Authentication
 - **Completed Tasks:**
   - [x] **0.1** Create GitHub repo, `.gitignore`, MIT license, branch `main`
   - [x] **0.2** Create `docs/` and add all 6 canonical documentation files (`prd.md`, `architecture.md`, `rules.md`, `design.md`, `tasks.md`, `memory.md`)
+  - [x] **0.3** Scaffold `server/` (Express + TS, tsx, ESLint, Prettier)
+  - [x] **0.4** Scaffold `client/` (Vite + React + TS, Tailwind, React Router, TanStack Query)
+  - [x] **0.5** `docker-compose.yml` with PostgreSQL; `.env.example` files for root/server/client
+  - [x] **0.6** Root `package.json` with unified scripts (`dev`, `build`, `lint`, `test`, `db:migrate`, `db:seed`)
+  - [x] **0.7** Env parsing with Zod; `/api/v1/health` endpoint including PostgreSQL DB check (tested & passed)
+  - [x] **1.1** Prisma schema: `User`, `Session`, `PasswordResetToken`, `Vendor`, `AuditLog`, enums
+  - [x] **1.2** Initial migration applied with partial unique index on `Vendor.gstNumber` where `deletedAt IS NULL`
+  - [x] **1.3** Seed script populated 4 demo accounts (Admin, Procurement Officer, Manager, Vendor) and 25 realistic vendors across all statuses and categories
+  - [x] **1.4** Prisma client singleton & insert-only AuditLog service created
 - **Active Task:**
-  - [ ] **0.3** Scaffold `server/` (Express + TS, tsx, ESLint, Prettier)
+  - [ ] **2.1** Utilities: argon2 hashing, token generation/hashing, JWT sign/verify, cookie helpers
