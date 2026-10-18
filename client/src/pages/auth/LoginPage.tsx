@@ -35,6 +35,7 @@ export function LoginPage() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -43,6 +44,12 @@ export function LoginPage() {
       password: '',
     },
   });
+
+  const fillCredentials = (email: string) => {
+    setValue('email', email, { shouldValidate: true });
+    setValue('password', 'Password@123', { shouldValidate: true });
+    setServerError(null);
+  };
 
   const onSubmit = async (data: LoginFormData) => {
     try {
@@ -138,23 +145,34 @@ export function LoginPage() {
       </div>
 
       {/* Quick Demo Credentials Assistant (Dev helper) */}
-      <div className="mt-6 p-3.5 rounded-xl bg-surface/80 border border-border-default max-w-sm w-full text-center space-y-1.5">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted block">
-          Demo Accounts (Password: Password@123)
-        </span>
-        <div className="flex flex-wrap items-center justify-center gap-1.5 text-[11px]">
-          <span className="px-2 py-0.5 rounded bg-surface-2 text-secondary border border-border-default">
-            admin@vendorbridge.local
-          </span>
-          <span className="px-2 py-0.5 rounded bg-surface-2 text-secondary border border-border-default">
-            officer@vendorbridge.local
-          </span>
-          <span className="px-2 py-0.5 rounded bg-surface-2 text-secondary border border-border-default">
-            manager@vendorbridge.local
-          </span>
-          <span className="px-2 py-0.5 rounded bg-surface-2 text-secondary border border-border-default">
-            vendor@vendorbridge.local
-          </span>
+      <div className="mt-6 p-4 rounded-xl bg-surface/90 border border-border-default max-w-md w-full text-center space-y-2.5 shadow-lg">
+        <div className="flex items-center justify-center gap-2 text-xs text-secondary">
+          <span className="font-medium text-primary">Demo Password:</span>
+          <code className="text-emerald-400 font-mono font-bold bg-surface-2 px-2 py-0.5 rounded border border-border-default select-all text-xs tracking-normal">
+            Password@123
+          </code>
+        </div>
+        <p className="text-[11px] text-muted">
+          Click any role below to auto-fill credentials:
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-2 text-[11px]">
+          {[
+            { label: 'Admin', email: 'admin@vendorbridge.local' },
+            { label: 'Officer', email: 'officer@vendorbridge.local' },
+            { label: 'Manager', email: 'manager@vendorbridge.local' },
+            { label: 'Vendor', email: 'vendor@vendorbridge.local' },
+          ].map((acc) => (
+            <button
+              key={acc.email}
+              type="button"
+              onClick={() => fillCredentials(acc.email)}
+              className="px-2.5 py-1 rounded-md bg-surface-2 hover:bg-surface-2/80 hover:border-brand/60 text-secondary hover:text-primary border border-border-default transition-all cursor-pointer font-mono text-[11px] flex items-center gap-1 active:scale-95"
+              title={`Click to auto-fill ${acc.label} credentials`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-brand inline-block"></span>
+              {acc.email}
+            </button>
+          ))}
         </div>
       </div>
     </div>
