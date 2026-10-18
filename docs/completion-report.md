@@ -114,8 +114,11 @@ The server integration test suite was executed using **Vitest** and **Supertest*
 
 ## 5. Demonstration Evidence
 
+- **Video Walkthrough Demonstration:** [Watch Video on LinkedIn](https://lnkd.in/p/dVGWVpez)
+- **Screenshot Repository Gallery:** [`docs/screenshots/`](docs/screenshots/)
+
 High-resolution screenshots are provided in `docs/screenshots/`:
-- `01-login.png`: Login interface with dark theme and demo credentials.
+- `01-login.png`: Login interface with dark theme and 1-click demo credentials.
 - `02-dashboard.png`: Role-aware dashboard with 4 live StatCards and empty state panels.
 - `03-vendors-list.png`: Vendor data table with 6 columns, search, and status chips.
 - `04-add-vendor-modal.png`: Validated vendor creation modal.
@@ -126,10 +129,18 @@ High-resolution screenshots are provided in `docs/screenshots/`:
 
 ## 6. Known Limitations & Roadmap for Weeks 2–4
 
-In accordance with Engineering Rule §1.8 (*"No Fake Features"*), features scheduled for upcoming milestones show honest empty/coming-soon states:
-- **Week 2:** RFQs, Quotation submission & comparison matrix.
-- **Week 3:** Approval workflows, Multi-level sign-offs & Purchase Order generation.
-- **Week 4:** Invoices, 3-way matching, payment tracking & Forensic audit reporting.
+In strict accordance with Engineering Rule §1.8 (*"No Fake Features — Never present static UI as implemented functionality"*), all unbuilt modules are intentionally and honestly represented as empty/coming-soon states:
+
+### 1. Incomplete Modules Scheduled for Weeks 2–4:
+- **Week 2:** RFQs (Request for Quotations), Vendor bidding & Quotation comparison matrix.
+- **Week 3:** Multi-level approval workflows, Purchase Order (PO) creation, and PO tracking. (Dashboard "Recent Purchase Orders" displays an honest empty state).
+- **Week 4:** Invoices, 3-way matching, payment tracking & Forensic audit reporting. (Dashboard "Spending Trends" displays an honest empty state).
+
+### 2. Known Technical & Environmental Limitations (Week 1 Scope):
+- **Development SMTP Transport:** Password reset integration uses Nodemailer with Ethereal/Mailtrap SMTP. In local development, generated reset links are also logged directly to the server console for rapid verification without external inbox dependency.
+- **Tax Identification Format:** Vendor GST validation strictly enforces the 15-character uppercase Indian GSTIN regex (`^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$`). International tax IDs are not in scope for this milestone.
+- **Database Architecture:** Configured for single-instance PostgreSQL 18 with Prisma connection pooling; multi-region read replicas are not deployed in this development milestone.
+- **Soft Delete Retention:** Vendor records are soft-deleted (`deletedAt` timestamp set) to preserve forensic audit log integrity and prevent orphaned foreign keys in future procurement transactions. Hard DB deletions are intentionally disallowed.
 
 ---
 

@@ -242,6 +242,9 @@ All 46 integration tests pass, including:
 
 ## 9. Demonstrable Evidence & Screenshots
 
+> 📺 **Demonstration Video Walkthrough:** [Watch Video Demonstration on LinkedIn](https://lnkd.in/p/dVGWVpez)  
+> 📁 **Screenshot Repository Gallery:** [`docs/screenshots/`](docs/screenshots/)
+
 All high-resolution demonstration screenshots are stored in [`docs/screenshots/`](docs/screenshots/):
 
 | Screenshot | Description | Preview |
