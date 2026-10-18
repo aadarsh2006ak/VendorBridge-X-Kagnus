@@ -13,9 +13,17 @@ export const app = express();
 app.use(helmet());
 
 // Strict CORS with credentials
+const allowedOrigins = [env.CLIENT_ORIGIN, 'http://localhost:5173', 'http://localhost:5174'];
 app.use(
   cors({
-    origin: env.CLIENT_ORIGIN,
+    origin: (origin, callback) => {
+      // allow requests with no origin (like mobile apps or curl)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],

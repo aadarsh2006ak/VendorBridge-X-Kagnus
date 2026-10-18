@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 import { app } from '../../../app.js';
 import { prisma } from '../../../lib/prisma.js';
@@ -15,6 +15,10 @@ describe('Role × Vendor Endpoint Matrix Test (RBAC Verification)', () => {
   let sampleVendorId: string;
 
   beforeAll(async () => {
+    // Clean up any test artifacts from prior runs
+    await prisma.vendor.deleteMany({
+      where: { contactName: 'Matrix Contact' },
+    });
     // Login as Admin
     const adminRes = await request(app)
       .post('/api/v1/auth/login')
@@ -296,6 +300,12 @@ describe('Role × Vendor Endpoint Matrix Test (RBAC Verification)', () => {
         where: { id: vendorToDeleteId },
       });
       expect(softDeleted!.deletedAt).not.toBeNull();
+    });
+  });
+
+  afterAll(async () => {
+    await prisma.vendor.deleteMany({
+      where: { contactName: 'Matrix Contact' },
     });
   });
 });

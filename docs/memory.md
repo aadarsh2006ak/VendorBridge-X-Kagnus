@@ -68,5 +68,12 @@
   - [x] **3.8** Write-only AuditLog entries for all vendor CRUD events
   - [x] **3.9** **Role × Endpoint Matrix Test (25/25 matrix cells verified passing)**
   - [x] **3.10** 46/46 Backend integration tests green
-- **Active Task:**
-  - [ ] **4.1** Tailwind theme with design tokens; Inter font
+  - [x] **4.1 - 4.7** Frontend foundation: Tailwind tokens, full UI kit, Axios interceptors, AuthContext, AppShell, responsive sidebar, route guards, ComingSoon modules
+  - [x] **5.1 - 5.5** Auth screens: Login, Register with Admin invite-code protection, Forgot Password, Reset Password
+  - [x] **6.1 - 6.7** Role-aware Dashboard: user greeting, 4 live database StatCards, PO and Spend analytics empty states, quick actions
+  - [x] **7.1 - 7.9** Vendor management UI: DataTable, search, category filter, status filter chips with real-time counts, Create/Edit modal, View drawer, Delete dialog, PostgreSQL persistence across reloads
+  - [x] **8.1 - 8.5** Quality & Hardening: 46/46 tests green, production client build passes cleanly (0 errors), security headers, CSRF headers, rate limiting
+  - [x] **9.1 - 9.5** Submission Package: root README.md, completion-report.md, docs/screenshots/, demo credentials, git commit & tag week-1
+- **Current Milestone Status:**
+  - **Week 1 Milestone Complete & Demonstrable.**
+

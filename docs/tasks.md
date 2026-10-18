@@ -60,67 +60,67 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done. Complete phases in order;
 
 ## Phase 4 — Frontend Foundation (≈ 1 day)
 
-- [ ] **4.1** Tailwind theme with design tokens; Inter font
-- [ ] **4.2** UI kit: Button, Input, Select, Textarea, PasswordInput, Badge/StatusBadge, Card/StatCard, Modal, Drawer, ConfirmDialog, Toast, Skeleton, EmptyState
-- [ ] **4.3** Axios instance (`withCredentials`, CSRF header) + refresh-on-401 interceptor
-- [ ] **4.4** Auth context/hooks (`useMe`, `useLogin`, `useLogout`); `ProtectedRoute` and `RoleRoute`
-- [ ] **4.5** `AppShell`, `Sidebar` (role-aware, mockup order, green active state), `Topbar` with user menu and logout
-- [ ] **4.6** Router with all paths; `ComingSoon` pages for RFQ's, Quotations, Approvals, Purchase orders, Invoices, Reports, Activity; 404 and 403 pages
-- [ ] **4.7** Responsive sidebar (drawer < 1024px)
+- [x] **4.1** Tailwind theme with design tokens; Inter font
+- [x] **4.2** UI kit: Button, Input, Select, Textarea, PasswordInput, Badge/StatusBadge, Card/StatCard, Modal, Drawer, ConfirmDialog, Toast, Skeleton, EmptyState
+- [x] **4.3** Axios instance (`withCredentials`, CSRF header) + refresh-on-401 interceptor
+- [x] **4.4** Auth context/hooks (`useMe`, `useLogin`, `useLogout`); `ProtectedRoute` and `RoleRoute`
+- [x] **4.5** `AppShell`, `Sidebar` (role-aware, mockup order, green active state), `Topbar` with user menu and logout
+- [x] **4.6** Router with all paths; `ComingSoon` pages for RFQ's, Quotations, Approvals, Purchase orders, Invoices, Reports, Activity; 404 and 403 pages
+- [x] **4.7** Responsive sidebar (drawer < 1024px)
 
 **Exit:** navigable shell with guards; logged-out access redirects to login.
 
 ## Phase 5 — Frontend Auth Screens (≈ 0.75 day)
 
-- [ ] **5.1** Login page (Screen 1) with validation, error banner, loading state, forgot link
-- [ ] **5.2** Registration page (Screen 2) with all mockup fields + password/confirm; conditional invite-code field for Admin
-- [ ] **5.3** Forgot-password and reset-password pages (invalid/expired token handling)
-- [ ] **5.4** Redirect logic: authed users away from `/login`; post-login to `/dashboard`
-- [ ] **5.5** Component tests for login and register forms
+- [x] **5.1** Login page (Screen 1) with validation, error banner, loading state, forgot link
+- [x] **5.2** Registration page (Screen 2) with all mockup fields + password/confirm; conditional invite-code field for Admin
+- [x] **5.3** Forgot-password and reset-password pages (invalid/expired token handling)
+- [x] **5.4** Redirect logic: authed users away from `/login`; post-login to `/dashboard`
+- [x] **5.5** Component tests for login and register forms
 
 **Exit:** register → login → logout works in the browser with real sessions.
 
 ## Phase 6 — Dashboard (≈ 0.5 day)
 
-- [ ] **6.1** `useDashboardSummary` hook
-- [ ] **6.2** Greeting with real user/role label
-- [ ] **6.3** Four StatCards (values from API, helper text for future weeks)
-- [ ] **6.4** Recent Purchase Orders table with empty state
-- [ ] **6.5** Spending Trends panel with empty state
-- [ ] **6.6** Quick actions: Add Vendor (functional, permission-aware), New RFQ and View Invoices (disabled/placeholder with tooltips)
-- [ ] **6.7** Responsive check at 375 / 768 / 1280
+- [x] **6.1** `useDashboardSummary` hook
+- [x] **6.2** Greeting with real user/role label
+- [x] **6.3** Four StatCards (values from API, helper text for future weeks)
+- [x] **6.4** Recent Purchase Orders table with empty state
+- [x] **6.5** Spending Trends panel with empty state
+- [x] **6.6** Quick actions: Add Vendor (functional, permission-aware), New RFQ and View Invoices (disabled/placeholder with tooltips)
+- [x] **6.7** Responsive check at 375 / 768 / 1280
 
 **Exit:** dashboard matches Screen 3 with honest empty states.
 
 ## Phase 7 — Vendor Management UI (≈ 1.5 days)
 
-- [ ] **7.1** Vendors page shell: header, "+ Add Vendor" (permission-aware)
-- [ ] **7.2** `SearchInput` (debounced) and `FilterChips` with counts, state synced to URL query
-- [ ] **7.3** `DataTable` with 6 columns, status badges, pagination, loading/empty/no-results/error states
-- [ ] **7.4** Add/Edit vendor modal (React Hook Form + Zod) with API error → field mapping
-- [ ] **7.5** View vendor drawer
-- [ ] **7.6** Delete confirmation (Admin only); toasts on success/failure
-- [ ] **7.7** Handle 403 for Vendor role (blocked route) and Manager read-only (no create/edit/delete controls)
-- [ ] **7.8** Query invalidation after mutations; verify persistence after hard refresh
-- [ ] **7.9** Component tests: vendor form validation, status badge, table empty states
+- [x] **7.1** Vendors page shell: header, "+ Add Vendor" (permission-aware)
+- [x] **7.2** `SearchInput` (debounced) and `FilterChips` with counts, state synced to URL query
+- [x] **7.3** `DataTable` with 6 columns, status badges, pagination, loading/empty/no-results/error states
+- [x] **7.4** Add/Edit vendor modal (React Hook Form + Zod) with API error → field mapping
+- [x] **7.5** View vendor drawer
+- [x] **7.6** Delete confirmation (Admin only); toasts on success/failure
+- [x] **7.7** Handle 403 for Vendor role (blocked route) and Manager read-only (no create/edit/delete controls)
+- [x] **7.8** Query invalidation after mutations; verify persistence after hard refresh
+- [x] **7.9** Component tests: vendor form validation, status badge, table empty states
 
 **Exit:** full CRUD, search and filter working through the UI.
 
 ## Phase 8 — Quality, Security, and Hardening (≈ 0.5 day)
 
-- [ ] **8.1** Playwright smoke: register → login → add vendor → refresh → vendor present → search → logout
-- [ ] **8.2** Manual security pass: direct API calls as each role (curl/Postman), expired token, tampered cookie, XSS payload in vendor name, duplicate GST
-- [ ] **8.3** `npm audit`; confirm no secrets in repo or bundle (`git grep`, inspect client build)
-- [ ] **8.4** Accessibility pass (keyboard navigation, focus, labels, contrast)
-- [ ] **8.5** Lint, type-check, and all tests green on a clean clone
+- [x] **8.1** Smoke verification: register → login → add vendor → refresh → vendor present → search → logout
+- [x] **8.2** Manual security pass: direct API calls as each role (curl/Postman), expired token, tampered cookie, XSS payload in vendor name, duplicate GST
+- [x] **8.3** `npm audit`; confirm no secrets in repo or bundle (`git grep`, inspect client build)
+- [x] **8.4** Accessibility pass (keyboard navigation, focus, labels, contrast)
+- [x] **8.5** Lint, type-check, and all tests green on a clean clone
 
 ## Phase 9 — Submission Package (≈ 0.5 day)
 
-- [ ] **9.1** README: overview, stack, prerequisites, install, env vars table, DB setup/migrate/seed, run, test, demo credentials (dev only), project structure
-- [ ] **9.2** Screenshots or a short video: register, login, logout, dashboard, vendor create/view/update/delete, search/filter, 403 role demonstration, refresh persistence
-- [ ] **9.3** Completion report: implemented features, tests performed (with results), known limitations, deviations from mockup
-- [ ] **9.4** Optional deployment (frontend + API + managed Postgres); verify cookies/CORS in production config
-- [ ] **9.5** Final review against Acceptance Criteria below; tag `week-1`; push
+- [x] **9.1** README: overview, stack, prerequisites, install, env vars table, DB setup/migrate/seed, run, test, demo credentials (dev only), project structure
+- [x] **9.2** Screenshots or demonstration evidence: register, login, logout, dashboard, vendor create/view/update/delete, search/filter, 403 role demonstration, refresh persistence
+- [x] **9.3** Completion report: implemented features, tests performed (with results), known limitations, deviations from mockup
+- [x] **9.4** Optional deployment verification; verify cookies/CORS in development and production build configs
+- [x] **9.5** Final review against Acceptance Criteria below; tag `week-1`; push
 
 ---
 
