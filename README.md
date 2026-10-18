@@ -242,16 +242,16 @@ All 46 integration tests pass, including:
 
 ## 9. Demonstrable Evidence & Screenshots
 
-All high-resolution demonstration screenshots are stored in [`docs/screenshots/`](file:///c:/Users/kumar/OneDrive/Desktop/kagnus-full%20stack%20internship%204%20week/docs/screenshots/):
+All high-resolution demonstration screenshots are stored in [`docs/screenshots/`](docs/screenshots/):
 
-| Screenshot | Description | File Path |
-|---|---|---|
-| **01 - Login Screen** | Sleek dark theme with brand mark, validation, and demo credentials | [`docs/screenshots/01-login.png`](file:///c:/Users/kumar/OneDrive/Desktop/kagnus-full%20stack%20internship%204%20week/docs/screenshots/01-login.png) |
-| **02 - Dashboard Shell** | Real greeting, 4 live database StatCards, PO & Spend empty states | [`docs/screenshots/02-dashboard.png`](file:///c:/Users/kumar/OneDrive/Desktop/kagnus-full%20stack%20internship%204%20week/docs/screenshots/02-dashboard.png) |
-| **03 - Vendor Management** | Full 6-column data table, search bar, category filter, status chips | [`docs/screenshots/03-vendors-list.png`](file:///c:/Users/kumar/OneDrive/Desktop/kagnus-full%20stack%20internship%204%20week/docs/screenshots/03-vendors-list.png) |
-| **04 - Add Vendor Modal** | Zod-validated modal form with Indian GSTIN and phone validation | [`docs/screenshots/04-add-vendor-modal.png`](file:///c:/Users/kumar/OneDrive/Desktop/kagnus-full%20stack%20internship%204%20week/docs/screenshots/04-add-vendor-modal.png) |
-| **05 - Filtered Vendors** | Instant filtering by "Pending" status chip with updated count chips | [`docs/screenshots/05-vendors-filtered.png`](file:///c:/Users/kumar/OneDrive/Desktop/kagnus-full%20stack%20internship%204%20week/docs/screenshots/05-vendors-filtered.png) |
-| **06 - Created Vendor** | New vendor created and persisted in PostgreSQL database | [`docs/screenshots/06-vendor-created.png`](file:///c:/Users/kumar/OneDrive/Desktop/kagnus-full%20stack%20internship%204%20week/docs/screenshots/06-vendor-created.png) |
+| Screenshot | Description | Preview |
+|---|---|:---:|
+| **01 - Login Screen** | Sleek dark theme with brand mark, validation, and 1-click demo accounts | <img src="docs/screenshots/01-login.png" width="280" alt="Login Screen" /> |
+| **02 - Dashboard Shell** | Real greeting, 4 live database StatCards, PO & Spend empty states | <img src="docs/screenshots/02-dashboard.png" width="280" alt="Dashboard Screen" /> |
+| **03 - Vendor Management** | Full 6-column data table, search bar, category filter, status chips | <img src="docs/screenshots/03-vendors-list.png" width="280" alt="Vendors Table" /> |
+| **04 - Add Vendor Modal** | Zod-validated modal form with Indian GSTIN and phone validation | <img src="docs/screenshots/04-add-vendor-modal.png" width="280" alt="Add Vendor Modal" /> |
+| **05 - Filtered Vendors** | Instant filtering by "Pending" status chip with updated count chips | <img src="docs/screenshots/05-vendors-filtered.png" width="280" alt="Filtered Vendors" /> |
+| **06 - Created Vendor** | New vendor created and persisted in PostgreSQL database | <img src="docs/screenshots/06-vendor-created.png" width="280" alt="Created Vendor" /> |
 
 ---
 
