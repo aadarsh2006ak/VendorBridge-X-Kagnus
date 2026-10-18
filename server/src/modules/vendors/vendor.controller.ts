@@ -13,7 +13,7 @@ export class VendorController {
 
   public static async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const vendor = await VendorService.getVendorById(req.params.id);
+      const vendor = await VendorService.getVendorById(req.params.id as string);
       res.status(200).json({ data: vendor });
     } catch (error) {
       next(error);
@@ -32,7 +32,7 @@ export class VendorController {
   public static async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const vendor = await VendorService.updateVendor(
-        req.params.id,
+        req.params.id as string,
         req.body,
         req.user!.id,
         req.ip
@@ -45,7 +45,7 @@ export class VendorController {
 
   public static async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await VendorService.deleteVendor(req.params.id, req.user!.id, req.ip);
+      const result = await VendorService.deleteVendor(req.params.id as string, req.user!.id, req.ip);
       res.status(200).json(result);
     } catch (error) {
       next(error);
