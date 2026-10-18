@@ -34,7 +34,7 @@
 ---
 
 ## Current Task Status
-- **Current Phase:** Phase 2 — Backend Authentication
+- **Current Phase:** Phase 3 — Backend Vendor Module
 - **Completed Tasks:**
   - [x] **0.1** Create GitHub repo, `.gitignore`, MIT license, branch `main`
   - [x] **0.2** Create `docs/` and add all 6 canonical documentation files (`prd.md`, `architecture.md`, `rules.md`, `design.md`, `tasks.md`, `memory.md`)
@@ -47,5 +47,16 @@
   - [x] **1.2** Initial migration applied with partial unique index on `Vendor.gstNumber` where `deletedAt IS NULL`
   - [x] **1.3** Seed script populated 4 demo accounts (Admin, Procurement Officer, Manager, Vendor) and 25 realistic vendors across all statuses and categories
   - [x] **1.4** Prisma client singleton & insert-only AuditLog service created
+  - [x] **2.1** Utilities: argon2id password hashing, token generation, SHA-256 token hashing, JWT sign/verify, cookie helpers
+  - [x] **2.2** Zod schemas: register, login, forgot, reset with strict mode
+  - [x] **2.3** `POST /api/v1/auth/register` (duplicate email 409, Admin invite-code check, password policy)
+  - [x] **2.4** `POST /api/v1/auth/login` (generic error, session row in DB, httpOnly cookies, audit log)
+  - [x] **2.5** `POST /api/v1/auth/refresh` (rotation and token reuse breach detection revoking all sessions)
+  - [x] **2.6** `POST /api/v1/auth/logout` and `GET /api/v1/auth/me`
+  - [x] **2.7** `POST /api/v1/auth/forgot-password` with Nodemailer (jsonTransport in test) and generic non-enumerating response
+  - [x] **2.8** `POST /api/v1/auth/reset-password` (consumes token, updates hash, revokes all active sessions)
+  - [x] **2.9** Middleware: `authenticate`, `authorize(permission)`, `validate`, `rateLimit`, `errorHandler`, `csrfProtection`
+  - [x] **2.10** `permissions.ts` RBAC map and typed `AppError` subclasses
+  - [x] **2.11** 14/14 Auth integration tests passing with Vitest
 - **Active Task:**
-  - [ ] **2.1** Utilities: argon2 hashing, token generation/hashing, JWT sign/verify, cookie helpers
+  - [ ] **3.1** Zod schemas: create, update (partial, strict), list query for Vendors

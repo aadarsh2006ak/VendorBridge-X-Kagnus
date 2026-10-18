@@ -29,17 +29,17 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done. Complete phases in order;
 
 ## Phase 2 — Backend Authentication (≈ 1.5 days)
 
-- [ ] **2.1** Utilities: argon2 hashing, token generation/hashing, JWT sign/verify, cookie helpers
-- [ ] **2.2** Zod schemas: register, login, forgot, reset
-- [ ] **2.3** `POST /auth/register` (duplicate email 409, Admin invite-code check, password policy)
-- [ ] **2.4** `POST /auth/login` (generic error, session row, cookies, audit log)
-- [ ] **2.5** `POST /auth/refresh` with rotation and reuse detection
-- [ ] **2.6** `POST /auth/logout` and `GET /auth/me`
-- [ ] **2.7** `POST /auth/forgot-password` + mailer (Ethereal/Mailtrap/SMTP); generic response; hashed 30-min single-use token
-- [ ] **2.8** `POST /auth/reset-password` (consume token, update hash, revoke all sessions)
-- [ ] **2.9** Middleware: `authenticate`, `authorize(permission)`, `validate`, `rateLimit`, central `errorHandler`; Helmet, CORS, CSRF header check
-- [ ] **2.10** `permissions.ts` map and typed `AppError` classes
-- [ ] **2.11** Tests: all auth endpoints incl. failures, expired/revoked tokens, rate limit
+- [x] **2.1** Utilities: argon2 hashing, token generation/hashing, JWT sign/verify, cookie helpers
+- [x] **2.2** Zod schemas: register, login, forgot, reset
+- [x] **2.3** `POST /auth/register` (duplicate email 409, Admin invite-code check, password policy)
+- [x] **2.4** `POST /auth/login` (generic error, session row, cookies, audit log)
+- [x] **2.5** `POST /auth/refresh` with rotation and reuse detection
+- [x] **2.6** `POST /auth/logout` and `GET /auth/me`
+- [x] **2.7** `POST /auth/forgot-password` + mailer (Ethereal/Mailtrap/SMTP); generic response; hashed 30-min single-use token
+- [x] **2.8** `POST /auth/reset-password` (consume token, update hash, revoke all sessions)
+- [x] **2.9** Middleware: `authenticate`, `authorize(permission)`, `validate`, `rateLimit`, central `errorHandler`; Helmet, CORS, CSRF header check
+- [x] **2.10** `permissions.ts` map and typed `AppError` classes
+- [x] **2.11** Tests: all auth endpoints incl. failures, expired/revoked tokens, rate limit
 
 **Exit:** all auth flows verified via API tests and Postman/curl.
 

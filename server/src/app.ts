@@ -43,5 +43,9 @@ app.get('/api/v1/health', async (_req, res, next) => {
   }
 });
 
+// Auth Routes
+import { authRouter } from './modules/auth/auth.routes.js';
+app.use('/api/v1/auth', authRouter);
+
 // Central error handler
 app.use(errorHandler);
