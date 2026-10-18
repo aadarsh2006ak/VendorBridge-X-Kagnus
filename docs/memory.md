@@ -34,7 +34,7 @@
 ---
 
 ## Current Task Status
-- **Current Phase:** Phase 3 — Backend Vendor Module
+- **Current Phase:** Phase 4 — Frontend Foundation
 - **Completed Tasks:**
   - [x] **0.1** Create GitHub repo, `.gitignore`, MIT license, branch `main`
   - [x] **0.2** Create `docs/` and add all 6 canonical documentation files (`prd.md`, `architecture.md`, `rules.md`, `design.md`, `tasks.md`, `memory.md`)
@@ -53,10 +53,20 @@
   - [x] **2.4** `POST /api/v1/auth/login` (generic error, session row in DB, httpOnly cookies, audit log)
   - [x] **2.5** `POST /api/v1/auth/refresh` (rotation and token reuse breach detection revoking all sessions)
   - [x] **2.6** `POST /api/v1/auth/logout` and `GET /api/v1/auth/me`
-  - [x] **2.7** `POST /api/v1/auth/forgot-password` with Nodemailer (jsonTransport in test) and generic non-enumerating response
+  - [x] **2.7** `POST /api/v1/auth/forgot-password` with Nodemailer and generic non-enumerating response
   - [x] **2.8** `POST /api/v1/auth/reset-password` (consumes token, updates hash, revokes all active sessions)
   - [x] **2.9** Middleware: `authenticate`, `authorize(permission)`, `validate`, `rateLimit`, `errorHandler`, `csrfProtection`
   - [x] **2.10** `permissions.ts` RBAC map and typed `AppError` subclasses
   - [x] **2.11** 14/14 Auth integration tests passing with Vitest
+  - [x] **3.1** Vendor Zod schemas: create, update, list query with 15-char Indian GST regex
+  - [x] **3.2** `GET /api/v1/vendors` with debounced search, status & category filters, pagination, and dynamic status chip counts
+  - [x] **3.3** `GET /api/v1/vendors/:id` detail with creator metadata
+  - [x] **3.4** `POST /api/v1/vendors` with GST uniqueness enforcement (409 Conflict)
+  - [x] **3.5** `PATCH /api/v1/vendors/:id` with partial update & audit logging
+  - [x] **3.6** `DELETE /api/v1/vendors/:id` soft delete (`deletedAt`)
+  - [x] **3.7** `GET /api/v1/dashboard/summary` contract for future weeks
+  - [x] **3.8** Write-only AuditLog entries for all vendor CRUD events
+  - [x] **3.9** **Role × Endpoint Matrix Test (25/25 matrix cells verified passing)**
+  - [x] **3.10** 46/46 Backend integration tests green
 - **Active Task:**
-  - [ ] **3.1** Zod schemas: create, update (partial, strict), list query for Vendors
+  - [ ] **4.1** Tailwind theme with design tokens; Inter font

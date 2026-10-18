@@ -45,16 +45,16 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done. Complete phases in order;
 
 ## Phase 3 — Backend Vendor Module (≈ 1 day)
 
-- [ ] **3.1** Zod schemas: create, update (partial, strict), list query
-- [ ] **3.2** `GET /vendors` with search (name, GST, category), status filter, category filter, pagination, sorting, and `counts`
-- [ ] **3.3** `GET /vendors/:id`
-- [ ] **3.4** `POST /vendors` (`vendor:create`), GST uniqueness → 409
-- [ ] **3.5** `PATCH /vendors/:id` (`vendor:update`)
-- [ ] **3.6** `DELETE /vendors/:id` (`vendor:delete`, soft delete)
-- [ ] **3.7** `GET /dashboard/summary` (zeros + empty arrays for future modules)
-- [ ] **3.8** Audit log entries for vendor create/update/delete
-- [ ] **3.9** **Role × endpoint matrix test** (Admin, Officer, Manager, Vendor, anonymous) for every vendor route
-- [ ] **3.10** Tests: validation errors, duplicate GST, search/filter correctness, pagination, soft-deleted vendors hidden
+- [x] **3.1** Zod schemas: create, update (partial, strict), list query
+- [x] **3.2** `GET /vendors` with search (name, GST, category), status filter, category filter, pagination, sorting, and `counts`
+- [x] **3.3** `GET /vendors/:id`
+- [x] **3.4** `POST /vendors` (`vendor:create`), GST uniqueness → 409
+- [x] **3.5** `PATCH /vendors/:id` (`vendor:update`)
+- [x] **3.6** `DELETE /vendors/:id` (`vendor:delete`, soft delete)
+- [x] **3.7** `GET /dashboard/summary` (zeros + empty arrays for future modules)
+- [x] **3.8** Audit log entries for vendor create/update/delete
+- [x] **3.9** **Role × endpoint matrix test** (Admin, Officer, Manager, Vendor, anonymous) for every vendor route
+- [x] **3.10** Tests: validation errors, duplicate GST, search/filter correctness, pagination, soft-deleted vendors hidden
 
 **Exit:** matrix test green; vendor API demonstrable without UI.
 

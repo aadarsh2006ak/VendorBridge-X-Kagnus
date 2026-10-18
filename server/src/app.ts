@@ -47,5 +47,13 @@ app.get('/api/v1/health', async (_req, res, next) => {
 import { authRouter } from './modules/auth/auth.routes.js';
 app.use('/api/v1/auth', authRouter);
 
+// Vendor Routes
+import { vendorRouter } from './modules/vendors/vendor.routes.js';
+app.use('/api/v1/vendors', vendorRouter);
+
+// Dashboard Routes
+import { dashboardRouter } from './modules/dashboard/dashboard.routes.js';
+app.use('/api/v1/dashboard', dashboardRouter);
+
 // Central error handler
 app.use(errorHandler);
