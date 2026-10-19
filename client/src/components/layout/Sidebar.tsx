@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Building2,
@@ -85,9 +85,32 @@ interface SidebarProps {
 
 export function Sidebar({ onCloseMobile }: SidebarProps) {
   const { user } = useAuth();
+  const location = useLocation();
+  const pathname = location.pathname;
   const currentRole = user?.role || 'VENDOR';
 
   const visibleItems = NAV_ITEMS.filter((item) => item.roles.includes(currentRole));
+
+  const isItemActive = (itemPath: string) => {
+    if (itemPath === '/dashboard') return pathname === '/dashboard';
+    if (itemPath === '/vendors') return pathname.startsWith('/vendors');
+    if (itemPath === '/quotations') {
+      return (
+        pathname.startsWith('/quotations') ||
+        pathname.includes('/comparison') ||
+        pathname.includes('/compare') ||
+        pathname.includes('/quote')
+      );
+    }
+    if (itemPath === '/rfqs') {
+      return (
+        pathname.startsWith('/rfqs') &&
+        !pathname.includes('/comparison') &&
+        !pathname.includes('/compare')
+      );
+    }
+    return pathname.startsWith(itemPath);
+  };
 
   return (
     <aside className="w-60 bg-surface border-r border-border-default flex flex-col h-full shrink-0 select-none">
@@ -114,15 +137,17 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
       <div className="p-3 space-y-1 flex-1 overflow-y-auto">
         {visibleItems.map((item) => {
           const Icon = item.icon;
+          const active = isItemActive(item.path);
+
           return (
             <NavLink
               key={item.path}
               to={item.path}
               onClick={onCloseMobile}
-              className={({ isActive }) =>
+              className={
                 cn(
                   'flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
-                  isActive
+                  active
                     ? 'bg-brand text-white shadow-sm font-semibold'
                     : 'text-secondary hover:text-primary hover:bg-surface-2'
                 )

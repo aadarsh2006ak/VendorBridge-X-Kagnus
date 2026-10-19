@@ -263,10 +263,10 @@ export function CreateRfqPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-primary">
-              {isEditing ? 'Edit Request for Quotation' : 'Create New Request for Quotation'}
+              {isEditing ? "Edit RFQ's" : "Create RFQ's"}
             </h1>
             <p className="text-sm text-secondary mt-0.5">
-              Specify procurement requirements, line items, and assign eligible vendors.
+              new request for quotation
             </p>
           </div>
         </div>
@@ -292,7 +292,7 @@ export function CreateRfqPage() {
             className="gap-2"
           >
             <Send className="w-4 h-4" />
-            Publish RFQ
+            Save & Send to Vendors
           </Button>
         </div>
       </div>

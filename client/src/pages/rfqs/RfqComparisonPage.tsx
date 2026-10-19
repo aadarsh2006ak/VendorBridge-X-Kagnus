@@ -150,8 +150,11 @@ export function RfqComparisonPage() {
               )}
             </div>
             <h1 className="text-2xl font-bold text-primary mt-1">
-              Quotation Comparison: {rfq.title}
+              Quotation Comparison
             </h1>
+            <p className="text-sm text-secondary mt-0.5">
+              RFQ: {rfq.title} — {summary.totalSubmittedQuotes} {summary.totalSubmittedQuotes === 1 ? 'quotation' : 'quotations'} received
+            </p>
           </div>
         </div>
 
@@ -400,10 +403,13 @@ export function RfqComparisonPage() {
                                 onClick={() =>
                                   setQuotationToSelect({ id: q.id, vendorName: v.name })
                                 }
-                                className="w-full text-xs gap-1.5"
+                                className={cn(
+                                  'w-full text-xs gap-1.5 font-semibold',
+                                  isLowest && 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md'
+                                )}
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" />
-                                Select this Quotation
+                                {isLowest ? 'Select & Approve' : 'Select'}
                               </Button>
                             )}
                           </div>
@@ -547,6 +553,11 @@ export function RfqComparisonPage() {
               </tr>
             </tbody>
           </table>
+
+          {/* Screen 7 Mockup: Footnote */}
+          <div className="p-3.5 border-t border-border-default bg-surface-2/30 text-xs text-rose-400 font-medium italic">
+            * Green = lowest price. Selecting vendor initiates the approval workflow.
+          </div>
         </div>
       )}
 

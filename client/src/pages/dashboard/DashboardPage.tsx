@@ -177,21 +177,16 @@ export function DashboardPage() {
           Quick Actions
         </h2>
         <div className="flex flex-wrap items-center gap-3">
-          {/* Action 1: + New RFQ (Disabled with tooltip) */}
-          <div className="relative group">
-            <Button
-              variant="outline"
-              size="md"
-              disabled
-              className="gap-2 cursor-not-allowed opacity-60"
-            >
-              <Plus className="w-4 h-4" />
-              + New RFQ
-            </Button>
-            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-surface-2 text-primary text-[11px] font-medium px-2.5 py-1 rounded shadow-lg border border-border-default whitespace-nowrap z-20 pointer-events-none">
-              Coming in Week 2
-            </div>
-          </div>
+          {/* Action 1: + New RFQ (Screen 5: Create RFQ) */}
+          <Button
+            variant="outline"
+            size="md"
+            className="gap-2"
+            onClick={() => navigate('/rfqs/new')}
+          >
+            <Plus className="w-4 h-4" />
+            + New RFQ
+          </Button>
 
           {/* Action 2: Add Vendor (Functional & Role-Aware) */}
           {canCreateVendor && (

@@ -236,7 +236,10 @@ export function VendorQuotePage() {
                 </span>
               )}
             </div>
-            <h1 className="text-2xl font-bold text-primary mt-1">{rfqData.title}</h1>
+            <h1 className="text-2xl font-bold text-primary mt-1">Submit Quotations</h1>
+            <p className="text-sm text-secondary mt-0.5">
+              RFQ: {rfqData.title} — deadline {new Date(rfqData.deadline).toLocaleDateString()}
+            </p>
           </div>
         </div>
 
@@ -300,6 +303,18 @@ export function VendorQuotePage() {
           </div>
         </div>
       )}
+
+      {/* Screen 6 Mockup: RFQ Summary Box */}
+      <div className="p-3.5 rounded-xl bg-surface border border-border-default flex items-center justify-between text-xs">
+        <div>
+          <span className="font-semibold text-secondary uppercase text-[10px] tracking-wider block">
+            RFQ Requirements Summary
+          </span>
+          <span className="text-primary font-medium mt-0.5 block">
+            {(rfqData.items || []).map((i: any) => `${i.name} * ${i.quantity}`).join(', ')} — category: {rfqData.category}
+          </span>
+        </div>
+      </div>
 
       {/* Scope / Notes if present */}
       {rfqData.description && (
