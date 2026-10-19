@@ -19,9 +19,14 @@ import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { VendorsPage } from './pages/vendors/VendorsPage';
 
-// Placeholders for Later Weeks
-import { RfqsPage } from './pages/placeholders/RfqsPage';
-import { QuotationsPage } from './pages/placeholders/QuotationsPage';
+// Active Functional Pages (Week 2 - RFQs & Quotations)
+import { RfqListPage } from './pages/rfqs/RfqListPage';
+import { CreateRfqPage } from './pages/rfqs/CreateRfqPage';
+import { RfqDetailPage } from './pages/rfqs/RfqDetailPage';
+import { RfqComparisonPage } from './pages/rfqs/RfqComparisonPage';
+import { VendorQuotePage } from './pages/vendor-portal/VendorQuotePage';
+
+// Placeholders for Later Weeks (Week 3 & Week 4)
 import { ApprovalsPage } from './pages/placeholders/ApprovalsPage';
 import { PurchaseOrdersPage } from './pages/placeholders/PurchaseOrdersPage';
 import { InvoicesPage } from './pages/placeholders/InvoicesPage';
@@ -75,9 +80,49 @@ export function App() {
                     <Route path="/vendors" element={<VendorsPage />} />
                   </Route>
 
-                  {/* Placeholder Modules (Screens 5 - 11) */}
-                  <Route path="/rfqs" element={<RfqsPage />} />
-                  <Route path="/quotations" element={<QuotationsPage />} />
+                  {/* Week 2: RFQ & Quotation Management */}
+                  {/* RFQ List (All roles: Staff sees master list, Vendor sees assigned list) */}
+                  <Route path="/rfqs" element={<RfqListPage />} />
+                  <Route path="/quotations" element={<Navigate to="/rfqs" replace />} />
+
+                  {/* Screen 5: Create & Edit RFQ (Admin, Procurement Officer) */}
+                  <Route
+                    element={
+                      <RoleRoute
+                        allowedRoles={['ADMIN', 'PROCUREMENT_OFFICER']}
+                      />
+                    }
+                  >
+                    <Route path="/rfqs/new" element={<CreateRfqPage />} />
+                    <Route path="/rfqs/:id/edit" element={<CreateRfqPage />} />
+                  </Route>
+
+                  {/* RFQ Detail View */}
+                  <Route path="/rfqs/:id" element={<RfqDetailPage />} />
+
+                  {/* Screen 7: Quotation Comparison Matrix (Admin, Procurement Officer, Manager) */}
+                  <Route
+                    element={
+                      <RoleRoute
+                        allowedRoles={['ADMIN', 'PROCUREMENT_OFFICER', 'MANAGER']}
+                      />
+                    }
+                  >
+                    <Route path="/rfqs/:id/comparison" element={<RfqComparisonPage />} />
+                  </Route>
+
+                  {/* Screen 6: Vendor Portal Quote Submission (Vendor) */}
+                  <Route
+                    element={
+                      <RoleRoute
+                        allowedRoles={['VENDOR']}
+                      />
+                    }
+                  >
+                    <Route path="/vendor-portal/rfqs/:id/quote" element={<VendorQuotePage />} />
+                  </Route>
+
+                  {/* Placeholder Modules (Weeks 3 & 4) */}
                   <Route
                     element={
                       <RoleRoute

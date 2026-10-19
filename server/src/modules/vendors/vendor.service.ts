@@ -152,6 +152,7 @@ export class VendorService {
         contactPhone: input.contactPhone,
         address: input.address,
         notes: input.notes,
+        rating: input.rating !== undefined ? input.rating : null,
         status: input.status,
         createdById: actorId,
       },
@@ -215,6 +216,7 @@ export class VendorService {
         ...(input.contactPhone !== undefined && { contactPhone: input.contactPhone }),
         ...(input.address !== undefined && { address: input.address }),
         ...(input.notes !== undefined && { notes: input.notes }),
+        ...(input.rating !== undefined && { rating: input.rating }),
         ...(input.status !== undefined && { status: input.status }),
       },
     });

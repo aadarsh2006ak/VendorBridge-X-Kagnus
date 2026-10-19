@@ -6,7 +6,11 @@ export type ErrorCode =
   | 'NOT_FOUND'
   | 'CONFLICT'
   | 'RATE_LIMITED'
-  | 'INTERNAL_ERROR';
+  | 'INTERNAL_ERROR'
+  | 'RFQ_DEADLINE_PASSED'
+  | 'INVALID_STATE_TRANSITION'
+  | 'VERSION_CONFLICT'
+  | 'VENDOR_BLOCKED';
 
 export interface ValidationErrorDetail {
   field: string;
@@ -69,3 +73,28 @@ export class InternalServerError extends AppError {
     super(500, 'INTERNAL_ERROR', message);
   }
 }
+
+export class RfqDeadlinePassedError extends AppError {
+  constructor(message: string = 'The submission deadline for this RFQ has already passed') {
+    super(409, 'RFQ_DEADLINE_PASSED', message);
+  }
+}
+
+export class InvalidStateTransitionError extends AppError {
+  constructor(message: string = 'Invalid status transition') {
+    super(409, 'INVALID_STATE_TRANSITION', message);
+  }
+}
+
+export class VersionConflictError extends AppError {
+  constructor(message: string = 'This record was modified by another request. Please reload and try again.') {
+    super(409, 'VERSION_CONFLICT', message);
+  }
+}
+
+export class VendorBlockedError extends AppError {
+  constructor(message: string = 'This vendor is blocked and cannot submit quotations') {
+    super(403, 'VENDOR_BLOCKED', message);
+  }
+}
+

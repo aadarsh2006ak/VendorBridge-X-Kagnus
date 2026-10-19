@@ -1,31 +1,77 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
 
-export type VendorStatusType = 'ACTIVE' | 'PENDING' | 'BLOCKED';
+export type StatusType =
+  | 'ACTIVE'
+  | 'PENDING'
+  | 'BLOCKED'
+  | 'DRAFT'
+  | 'OPEN'
+  | 'CLOSED'
+  | 'QUOTATION_SELECTED'
+  | 'CANCELLED'
+  | 'SUBMITTED'
+  | string;
 
 interface StatusBadgeProps {
-  status: VendorStatusType | string;
+  status: StatusType;
   className?: string;
+  size?: 'sm' | 'md';
 }
 
-export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const normalized = status.toUpperCase() as VendorStatusType;
+export function StatusBadge({ status, className, size = 'sm' }: StatusBadgeProps) {
+  const normalized = (status || '').toUpperCase();
 
-  const styles = {
+  const styles: Record<string, { bg: string; dot: string; label: string }> = {
+    // Vendor Statuses
     ACTIVE: {
-      bg: 'bg-emerald-950/50 text-status-success border-status-success/30',
-      dot: 'bg-status-success',
+      bg: 'bg-emerald-950/50 text-emerald-400 border-emerald-500/30',
+      dot: 'bg-emerald-400',
       label: 'Active',
     },
     PENDING: {
-      bg: 'bg-amber-950/50 text-status-warning border-status-warning/30',
-      dot: 'bg-status-warning',
+      bg: 'bg-amber-950/50 text-amber-400 border-amber-500/30',
+      dot: 'bg-amber-400',
       label: 'Pending',
     },
     BLOCKED: {
-      bg: 'bg-red-950/50 text-status-danger border-status-danger/30',
-      dot: 'bg-status-danger',
+      bg: 'bg-red-950/50 text-rose-400 border-rose-500/30',
+      dot: 'bg-rose-400',
       label: 'Blocked',
+    },
+
+    // RFQ Statuses
+    DRAFT: {
+      bg: 'bg-slate-900/60 text-slate-300 border-slate-700/50',
+      dot: 'bg-slate-400',
+      label: 'Draft',
+    },
+    OPEN: {
+      bg: 'bg-blue-950/50 text-blue-400 border-blue-500/30',
+      dot: 'bg-blue-400 animate-pulse',
+      label: 'Open',
+    },
+    CLOSED: {
+      bg: 'bg-amber-950/50 text-amber-400 border-amber-500/30',
+      dot: 'bg-amber-400',
+      label: 'Closed',
+    },
+    QUOTATION_SELECTED: {
+      bg: 'bg-emerald-950/50 text-emerald-300 border-emerald-500/30',
+      dot: 'bg-emerald-400',
+      label: 'Quotation Selected',
+    },
+    CANCELLED: {
+      bg: 'bg-rose-950/50 text-rose-400 border-rose-500/30',
+      dot: 'bg-rose-400',
+      label: 'Cancelled',
+    },
+
+    // Quotation Statuses
+    SUBMITTED: {
+      bg: 'bg-emerald-950/50 text-emerald-300 border-emerald-500/30',
+      dot: 'bg-emerald-400',
+      label: 'Submitted',
     },
   };
 
@@ -38,7 +84,8 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border select-none',
+        'inline-flex items-center gap-1.5 rounded-full font-medium border select-none',
+        size === 'sm' ? 'px-2.5 py-0.5 text-xs' : 'px-3 py-1 text-sm',
         current.bg,
         className
       )}

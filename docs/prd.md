@@ -1,163 +1,195 @@
-# VendorBridge — Product Requirements Document (Week 1)
+# VendorBridge — Product Requirements Document (Week 2)
 
-**Project:** VendorBridge — Procurement & Vendor Management ERP
-**Repository:** `VendorBridge-X-Kagnus` (single repo for all four weekly assignments)
-**Milestone:** Week 1 — Foundation & Vendor Management
-**Design source of truth:** VendorBridge Excalidraw mockup (11 screens)
+**Milestone:** Week 2 — RFQ & Quotation Management
+**Repository:** `VendorBridge-X-Kagnus` (same repo; builds on Week 1)
+**Design source of truth:** VendorBridge Excalidraw mockup — Screen 5 (Create RFQ), Screen 6 (Submit Quotations), Screen 7 (Quotation Comparison)
+**Engineering focus this week:** maintainability and scalability (see `architecture.md` §2 and `rules.md` §2). Week 2 is where the codebase either becomes a platform for Weeks 3–4 or starts accumulating debt.
 
 ---
 
 ## 1. Summary
 
-VendorBridge is a procurement ERP that takes a company from vendor onboarding through RFQs, quotations, approvals, purchase orders, invoices, and reporting. Week 1 builds the foundation every later week depends on: **secure authentication with role-based access, the main dashboard shell, and complete vendor management** backed by a real database.
+Week 2 delivers the core procurement workflow:
 
-By the end of Week 1 a reviewer must be able to register, log in, see a role-aware dashboard, create/view/update/delete vendors, search and filter them, refresh the page and still see the data, and confirm that restricted roles are blocked **by the backend**.
+1. A **Procurement Officer** creates an RFQ (line items, deadline, attachments) and assigns it to registered vendors.
+2. **Vendors** see only the RFQs assigned to them and submit (and edit, before the deadline) a quotation.
+3. The officer **compares** submitted quotations side by side, with the lowest valid price highlighted, and **selects** one.
+4. The selected quotation is stored in a way Week 3's approval workflow can pick up directly.
+
+Everything must be database-backed, role-enforced on the backend, and demonstrable end to end across multiple accounts.
 
 ## 2. Goals and Non-Goals
 
 ### Goals
-- Working full-stack authentication with sessions, logout, password reset, and four roles.
-- Backend-enforced role-based authorization (RBAC) on every protected endpoint.
-- Dashboard matching Screen 3, with real empty states for future-week modules.
-- Full vendor CRUD with validation, search, status filtering, and status indicators (Screen 4).
-- Persistent storage, clean project structure, README, and demo evidence.
+- RFQ create / list / view / edit-while-draft / publish / close / cancel with unique human-readable IDs.
+- Vendor assignment with backend-enforced visibility (a vendor never sees another vendor's RFQ or quotation).
+- Quotation draft, submit, and edit-before-deadline with server-side deadline enforcement.
+- Comparison screen using real submitted data: lowest-price highlighting, sorting, filtering, rating indicators, empty states.
+- Referential integrity guaranteeing a quotation can only belong to its own RFQ and an assigned vendor.
+- A selected quotation clearly identifiable for Week 3.
+- Foundations that keep Weeks 3–4 cheap: shared schemas package, module boundaries, state machines, storage abstraction, domain events.
 
-### Non-Goals (Week 1)
-RFQ creation (Screen 5), quotations and comparison (6, 7), approval workflow (8), PO and invoice generation (9), activity log UI (10), reports and analytics (11). These appear in navigation and show empty states / "coming soon" placeholders only. Do not present static UI for them as implemented features.
+### Non-Goals (Week 2)
+Approval workflow and approval statuses (Week 3), purchase orders and invoices (Week 4), reports (Week 4), activity log UI (Week 4), vendor decline/negotiation flows, multi-currency, email reply parsing, e-signatures, per-line partial awards, sealed-bid mode (see Open Questions).
 
-## 3. Users and Roles
+## 3. Roles and Permissions
 
-| Role | Description | Week 1 capability |
-|---|---|---|
-| **Admin** | System owner | Full vendor CRUD (including delete), all navigation |
-| **Procurement Officer** | Day-to-day buyer (primary dashboard persona) | Create, read, update vendors; cannot hard-delete |
-| **Manager / Approver** | Approves procurement decisions | Read-only vendor access; dashboard |
-| **Vendor** | External supplier user | Dashboard only; no access to vendor management |
+Week 1 roles are unchanged. Week 2 adds a **Vendor ↔ Vendor-record link** (see VEN-L) so a Vendor user can act for a vendor company.
 
-### Vendor management permission matrix (enforced on backend)
-
-| Operation | Admin | Procurement Officer | Manager/Approver | Vendor |
+| Capability | Admin | Procurement Officer | Manager/Approver | Vendor |
 |---|:-:|:-:|:-:|:-:|
-| List / search / filter vendors | ✅ | ✅ | ✅ | ❌ |
-| View vendor detail | ✅ | ✅ | ✅ | ❌ |
-| Create vendor | ✅ | ✅ | ❌ | ❌ |
-| Update vendor (incl. status) | ✅ | ✅ | ❌ | ❌ |
-| Delete vendor | ✅ | ❌ | ❌ | ❌ |
+| List / view all RFQs | ✅ | ✅ | ✅ (read) | ❌ (sees assigned only, via vendor portal) |
+| Create RFQ | ✅ | ✅ | ❌ | ❌ |
+| Edit / publish / close / cancel / delete RFQ | ✅ | ✅ own RFQs | ❌ | ❌ |
+| Manage RFQ attachments | ✅ | ✅ own RFQs | ❌ | ❌ |
+| Download RFQ attachments | ✅ | ✅ | ✅ | ✅ assigned, published only |
+| View assigned RFQ (vendor-safe view) | n/a | n/a | n/a | ✅ |
+| Create / edit / submit own quotation | ❌ | ❌ | ❌ | ✅ assigned RFQ, before deadline |
+| View quotations for an RFQ | ✅ | ✅ | ✅ | ❌ (own only) |
+| Compare quotations | ✅ | ✅ | ✅ (read) | ❌ |
+| Select a quotation | ✅ | ✅ own RFQs | ❌ | ❌ |
+| Link vendor users to vendor records | ✅ | ✅ | ❌ | ❌ |
+| Set vendor rating | ✅ | ✅ | ❌ | ❌ |
 
-Unauthenticated → `401`. Authenticated but not permitted → `403`.
+Rules:
+- Role-level denial → `403`. Object-level denial (e.g., vendor requests an RFQ not assigned to them) → `404`, so the existence of other RFQs is not leaked.
+- All checks are enforced server-side; the UI only mirrors them.
 
-## 4. Roadmap Context (assumed from design)
+## 3a. Business Rules (authoritative)
 
-Only Week 1 was specified. The later weeks below are an **assumption** inferred from the mockup and should be confirmed.
-
-| Week | Scope |
+| ID | Rule |
 |---|---|
-| 1 | Auth, dashboard, vendors (Screens 1–4) |
-| 2 (assumed) | RFQs (Screen 5), vendor quotations (6) |
-| 3 (assumed) | Quotation comparison (7), approval workflow (8) |
-| 4 (assumed) | PO and invoice (9), activity/audit logs (10), reports (11) |
+| BR-1 | RFQ IDs are unique and human-readable: `RFQ-{YYYY}-{NNNN}` (per-year sequence), alongside an internal UUID. |
+| BR-2 | Only vendors with status **Active** may be assigned to an RFQ. Pending and Blocked vendors are rejected. |
+| BR-3 | An RFQ needs ≥1 line item, ≥1 assigned vendor (to publish), and a deadline in the future (to publish). Drafts may be incomplete but must have a title. |
+| BR-4 | Server time is authoritative for deadlines. A quotation write after the deadline is rejected (`409 RFQ_DEADLINE_PASSED`), even if the UI was open. |
+| BR-5 | One quotation per (RFQ, vendor). Editing updates it; it never creates duplicates. |
+| BR-6 | A quotation prices **every** RFQ line item. Quantities come from the RFQ and cannot be changed by the vendor. |
+| BR-7 | Totals are computed on the server only: `lineTotal = unitPrice × qty`, `subtotal = Σ lineTotal`, `tax = subtotal × taxRate%`, `grandTotal = subtotal + tax`, rounded half-up to 2 decimals. Client totals are previews. |
+| BR-8 | Quotation delivery time is per line item (days); quotation-level delivery = max of lines. |
+| BR-9 | A quotation is **comparable and valid** if it is `SUBMITTED`, prices all line items, has `grandTotal > 0`, and belongs to the RFQ being compared. Drafts never appear in comparison. |
+| BR-10 | The **lowest** quotation is the valid one with the minimum `grandTotal`. Ties: all tied quotations are flagged lowest. Lowest is computed over all valid quotations, regardless of active filters. |
+| BR-11 | Vendors may edit a submitted quotation until the deadline, while the RFQ is `OPEN` and the quotation is not selected. Each edit creates a revision snapshot. |
+| BR-12 | Selecting a quotation moves the RFQ to `QUOTATION_SELECTED` and locks all quotations. Re-selecting is allowed until Week 3's approval starts (Week 3 adds that guard). |
+| BR-13 | Line items on an `OPEN` RFQ cannot change (would invalidate quotes). Allowed on `OPEN`: extend the deadline (never shorten), add vendors, edit description. |
+| BR-14 | An `OPEN` RFQ whose deadline passes becomes `CLOSED` (derived immediately on read; persisted by a background job). A `CLOSED` RFQ with no selection can be reopened only by setting a new future deadline. |
+| BR-15 | A vendor assignment can be removed only if that vendor has no submitted quotation. |
+| BR-16 | If a vendor becomes Blocked after assignment, they can no longer create or edit quotations; existing submitted quotations remain visible to the officer, flagged "vendor blocked", and are excluded from lowest-price selection. |
+| BR-17 | Deadlines are stored in UTC and displayed in the user's locale; default entry time is 23:59 IST on the chosen date. |
 
-Week 1 decisions (schema, audit log writes, nav structure) should not block these.
+## 4. Functional Requirements
 
-## 5. Functional Requirements
-
-### 5.1 Authentication (Screens 1, 2)
-
-| ID | Requirement | Acceptance criteria |
-|---|---|---|
-| AUTH-1 | Registration | Form collects first name, last name, email, phone, role, country, additional info, password. Validated client and server. Duplicate email returns a clear error. |
-| AUTH-2 | Login | Email + password. Generic error on failure ("Invalid email or password"). Redirects to `/dashboard`. |
-| AUTH-3 | Logout | Invalidates the server-side session and clears cookies. Back button cannot reveal protected data. |
-| AUTH-4 | Session handling | Short-lived access token + rotating refresh token in `httpOnly` cookies. Expired access token refreshes silently; failed refresh redirects to login. |
-| AUTH-5 | Protected routes | Frontend route guards **and** backend middleware. Direct URL access without a session redirects to login. |
-| AUTH-6 | Four roles | Procurement Officer, Vendor, Manager/Approver, Admin stored on the user record. |
-| AUTH-7 | Backend RBAC | Role checks in API middleware for every protected route. Frontend hiding is cosmetic only. |
-| AUTH-8 | Forgot / reset password | Request reset by email → single-use, expiring token link → set new password. Response never reveals whether an email exists. All sessions revoked after reset. |
-| AUTH-9 | Admin registration safeguard | Admin role cannot be self-assigned freely; requires a server-side invite code (see Deviations). |
-
-**Password policy:** min 8 chars, at least one uppercase, one lowercase, one number.
-
-### 5.2 Dashboard (Screen 3)
+### 4.1 RFQ Management (Screen 5 + list/detail)
 
 | ID | Requirement | Acceptance criteria |
 |---|---|---|
-| DASH-1 | Header and greeting | "Dashboard — Welcome back, {Role label}, Today's Overview" using the logged-in user's real name and role. |
-| DASH-2 | Summary cards | Four cards: Active RFQ's, Pending Approvals, PO's this month, Overdue invoices. Values come from `GET /dashboard/summary` (0 until later weeks) with a helper line such as "Available in Week 2". |
-| DASH-3 | Recent Purchase Orders | Table with PO#, Vendor, Amount, Status. Empty state when no data. |
-| DASH-4 | Spending Trends (last 6 months) | Chart container with empty state. Wire up in Week 4. |
-| DASH-5 | Quick actions | **+ New RFQ** (disabled, "Coming Week 2"), **Add Vendor** (functional: opens create-vendor flow), **View Invoices** (disabled/placeholder). |
-| DASH-6 | Role-aware sidebar | Sidebar items shown per role; active item highlighted green. |
-| DASH-7 | Responsive | Sidebar collapses to a drawer on small screens. Cards reflow to 2 then 1 column. |
+| RFQ-1 | Create RFQ | Fields: title*, category, deadline*, description, line items (item, qty, unit), assigned vendors, attachments. IDs per BR-1. |
+| RFQ-2 | Save as Draft | Stores RFQ as `DRAFT`; not visible to vendors; editable. |
+| RFQ-3 | Save & Send to Vendors | Validates BR-3, transitions to `OPEN` atomically with creation; assigned vendors are notified (in-app visibility + email). |
+| RFQ-4 | Line items | Add/remove rows; name (required), qty > 0, unit from list; max 50 rows. |
+| RFQ-5 | Vendor assignment | Search/select multiple Active vendors; chips with remove (×); max 20 vendors per RFQ. |
+| RFQ-6 | Attachments | Drag-and-drop or click upload; PDF, DOCX, XLSX, CSV, PNG, JPG; ≤ 10 MB each; ≤ 5 per RFQ; validated by content, not extension. |
+| RFQ-7 | RFQ list | Columns: RFQ ID, Title, Category, Deadline, Vendors (quoted/assigned), Status, Action. Search by ID/title; status chips with counts; pagination; sorting. |
+| RFQ-8 | RFQ detail | Requirements, line items, attachments, deadline countdown, per-vendor status (Invited / Viewed / Quoted), actions by state. |
+| RFQ-9 | Status tracking | Statuses: Draft, Open, Closed, Quotation Selected, Cancelled, with colored badges. |
+| RFQ-10 | Close / Cancel / Reopen / Delete | Per state machine; delete only for `DRAFT` (soft delete); cancel requires a reason. |
+| RFQ-11 | Validation | Server-side Zod validation mirrored client-side; field-level errors. |
 
-### 5.3 Vendor Management (Screen 4)
+### 4.2 Vendor Portal and Access (Screen 6 entry)
 
 | ID | Requirement | Acceptance criteria |
 |---|---|---|
-| VEN-1 | Create | "+ Add Vendor" opens a form. Required: name, category, GST number, contact person, contact email, contact phone, status. Optional: address, notes. |
-| VEN-2 | List | Table columns: Vendor Name, Category, GST No., Contact No., Status, Action. Paginated. |
-| VEN-3 | View | "View" opens a detail view (drawer or page) with all fields, created/updated info. |
-| VEN-4 | Update | Edit form prefilled; same validation as create. |
-| VEN-5 | Delete | Admin only, with confirmation dialog. Soft delete (see architecture). |
-| VEN-6 | Search | Search bar: "search by name, gst number, category…". Debounced; server-side. |
-| VEN-7 | Filter | Status chips with counts: All, Active, Pending, Blocked. Optional category filter. |
-| VEN-8 | Status indicators | Color-coded badges: Active (green), Pending (amber), Blocked (red). |
-| VEN-9 | Validation | GST format `^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$`; email format; phone 10 digits (India) or E.164; unique GST. Field-level errors from API shown inline. |
-| VEN-10 | Persistence | Data stored in the database; survives refresh and server restart. |
-| VEN-11 | Error handling | Loading, empty, no-results, and API-error states all handled. |
-| VEN-12 | Authorization | Per the permission matrix, enforced server-side. |
+| VEN-L | Vendor user ↔ vendor record link | Officer/Admin can link a Vendor-role user to a vendor record (vendor drawer → "Portal users"). A Vendor user without a link sees an explanatory empty state and no RFQs. One vendor can have several users; a user belongs to one vendor in Week 2. |
+| VP-1 | Assigned RFQs list | Vendor sees only non-draft RFQs assigned to their vendor, with deadline, status, and "Quote submitted / Awaiting quotation". |
+| VP-2 | RFQ detail (vendor-safe) | Shows requirements, line items, deadline, attachments. Never shows other invited vendors, other quotations, or internal notes. |
+| VP-3 | First view tracking | First open sets "Viewed" for that vendor. |
 
-**Vendor categories (initial list):** IT Hardware, IT Services, Furniture, Stationery, Logistics, Construction, Other.
+### 4.3 Quotation Submission (Screen 6)
 
-### 5.4 Placeholder modules
+| ID | Requirement | Acceptance criteria |
+|---|---|---|
+| Q-1 | Quote form | RFQ summary box; table (Item, Qty, Unit price, Total, Delivery days); Tax/GST %; Notes/terms; payment terms (days); summary (Subtotal, GST, Grand total). |
+| Q-2 | Save Draft | Persists partial quote; may be incomplete; excluded from comparison. |
+| Q-3 | Submit Quotation | Validates BR-6/7; status `SUBMITTED`; officer notified. |
+| Q-4 | Edit before deadline | Allowed per BR-11; version conflicts (`409 VERSION_CONFLICT`) handled with a clear message. |
+| Q-5 | Deadline enforcement | After deadline, form is read-only and API rejects writes (BR-4). |
+| Q-6 | Authorization | Only a member of an assigned, Active vendor can write; unrelated RFQs return `404`. |
+| Q-7 | Live preview | Totals update as the vendor types (client preview using shared calculator; server authoritative). |
 
-RFQ's, Quotations, Approvals, Purchase orders, Invoices, Reports, Activity appear in the sidebar. Each route renders a consistent **Coming soon / empty state** page naming the week it arrives. Nothing is faked as functional.
+### 4.4 Quotation Comparison (Screen 7)
 
-## 6. Non-Functional Requirements
+| ID | Requirement | Acceptance criteria |
+|---|---|---|
+| C-1 | Side-by-side table | Criteria rows × vendor columns: Grand Total, GST %, Delivery (days), Vendor rating, Payment terms. |
+| C-2 | Lowest highlight | Column for lowest valid price is green with a text badge "Lowest" (not color-only). |
+| C-3 | Sorting | By price, delivery, rating, submission time; asc/desc. |
+| C-4 | Filtering | Max price, max delivery days, min rating, specific vendors. |
+| C-5 | Ratings | Shown as `4.5/5` when available; "Not rated" otherwise. |
+| C-6 | Empty states | No quotations yet; all filtered out; RFQ with only drafts. |
+| C-7 | Select | "Select" on each column sets the RFQ's selected quotation (BR-12). |
+| C-8 | Data integrity | Comparison reads only real saved quotations from the API. |
+| C-9 | Line breakdown (extension) | Collapsible per-item unit-price comparison with the lowest unit price marked. |
 
-- **Security:** hashed passwords (argon2id or bcrypt ≥ 12), httpOnly/Secure/SameSite cookies, CSRF protection, rate-limited auth endpoints, Helmet headers, strict CORS, no secrets in frontend, input validation on every endpoint, parameterized queries via ORM.
-- **Maintainability:** clear `client/` and `server/` separation, layered backend (routes → controllers → services → data), reusable UI components, consistent error format.
-- **Performance:** list endpoint responds < 300 ms for 1,000 vendors; indexed search columns.
-- **Accessibility:** keyboard navigable, labeled inputs, sufficient contrast, focus states.
-- **Configuration:** all secrets/config in environment variables with a committed `.env.example`.
+### 4.5 Integration with Week 1
 
-## 7. Submission Package (mandatory)
+- Reuse auth, sessions, RBAC middleware, error format, audit log, UI kit, `AppShell`.
+- Sidebar items **RFQ's** and **Quotations** become active (no longer "Coming soon").
+- Dashboard: "Active RFQ's" shows real data (scoped to role); "Pending Approvals", "PO's this month", "Overdue invoices" remain empty states; "+ New RFQ" quick action is enabled for Admin/Officer.
+- Vendor model gains an optional `rating` (0–5, one decimal), editable by Admin/Officer.
 
-1. Updated GitHub repo `VendorBridge-X-Kagnus` with working source.
-2. README: install, configure (env vars), run, test, seed.
-3. Screenshots or short video: auth flow, dashboard, vendor CRUD, search/filter, role restriction (403 demo), persistence after refresh.
-4. Deployed preview, if deployment is part of the environment.
-5. Completion report: features implemented, tests performed, known limitations.
+## 5. Non-Functional Requirements
 
-## 8. Definition of Done
+| Area | Requirement |
+|---|---|
+| Security | Object-level authorization on every RFQ/quotation/attachment route; audience-specific response shapes (vendor DTOs omit internal data); upload validation; rate limits on upload and submit; no secrets in client. |
+| Data integrity | DB-level constraints (composite foreign keys, unique, CHECK) in addition to service validation; transactions for multi-row writes; optimistic concurrency via `version`. |
+| Performance | RFQ list p95 < 300 ms at 10k RFQs; comparison p95 < 500 ms at 20 quotations × 50 line items; no N+1 queries (verified by query-count tests). |
+| Scalability | Stateless API (horizontally scalable); file storage behind an interface (local → S3-compatible); background job safe on multiple instances (advisory lock); cursor/offset pagination standard; indexes documented. |
+| Maintainability | Module boundaries enforced by lint; shared schemas package; state machines as data; < 300 lines per file target; documented decisions (ADRs). |
+| Reliability | Side effects (emails) never fail a user request; failures logged and retriable. |
+| Accessibility | Keyboard-usable comparison table and forms; status never color-only; upload dropzone has a keyboard-accessible button. |
+| Observability | Request IDs, structured logs, audit entries for every state change. |
+| Time | UTC in DB; injected clock in code for deterministic deadline tests. |
 
-A reviewer can verify all of the following:
-- [ ] Register, login, logout work end to end.
-- [ ] Protected pages redirect when logged out; protected API returns 401.
-- [ ] Each role's restrictions are enforced by the API (verified with direct API calls, not just UI).
-- [ ] Vendor create, view, update, delete work and validate inputs.
-- [ ] Search and status filter return correct records.
-- [ ] Vendor data persists across refresh and restart.
-- [ ] Dashboard matches the mockup with proper empty states.
-- [ ] README, env example, demo evidence, completion report included.
+## 6. Submission Package (mandatory)
 
-**Not accepted:** static UI shown as a working feature; vendor data lost on refresh; frontend-only role restrictions; missing source, setup instructions, or demo evidence.
+1. Updated repo with working Week 2 features and meaningful commits (Conventional Commits).
+2. README updated: new env vars (storage, mail, job settings), migration and seed steps, new demo accounts.
+3. Screenshots or video: RFQ creation (multi-vendor + attachment) → vendor A and vendor B submit quotes from separate accounts → vendor edits before deadline → unrelated vendor denied → officer comparison with lowest highlight, sort/filter → selection → refresh persistence.
+4. Deployed preview, if available.
+5. Completion report: implemented features, tests performed, known limitations, deviations.
 
-## 9. Deviations from Mockup (require approval)
+## 7. Definition of Done
 
-The brief says not to redesign or remove specified features without approval. These are **additions or clarifications** needed to meet the written requirements:
+- [ ] Create an RFQ, assign ≥ 2 vendors, publish; vendors see it, others do not (verified by API calls as each role).
+- [ ] Each vendor submits a quotation; edit works before deadline; fails after (clock-controlled test and manual).
+- [ ] Comparison shows real data, highlights lowest valid, sorts and filters, handles empty states.
+- [ ] A quotation cannot be attached to an unrelated RFQ or unassigned vendor (service **and** DB constraints tested).
+- [ ] Selected quotation persisted on the RFQ and visible after refresh.
+- [ ] Role × endpoint matrix test extended to all new routes (including IDOR cases).
+- [ ] CI green: lint, typecheck, boundary check, tests, build.
+- [ ] README, demo evidence, completion report delivered.
 
-| # | Mockup | Change | Reason |
+**Not accepted:** hardcoded RFQs or comparisons; quotations not linked to correct vendor and RFQ; unauthorized vendor access or submissions; comparison not using submitted data; missing source or evidence.
+
+## 8. Deviations and Extensions (need approval)
+
+| # | Item | Change | Reason |
 |---|---|---|---|
-| 1 | Login uses "Username" | Field labeled **Email** | Requirements specify email/password login |
-| 2 | Registration has no password field | Add **Password** and **Confirm password** | Needed for email/password auth |
-| 3 | Registration role dropdown includes Admin | Keep dropdown, but Admin requires an invite code | Prevent privilege escalation via public form |
-| 4 | No forgot-password link | Add "Forgot password?" on login | Required by AUTH-8 |
-| 5 | Vendors page has no edit/delete controls beyond "View" | Edit and Delete actions available from the Action column / detail view | Required by VEN-4, VEN-5 |
-| 6 | "Photo" placeholders on auth screens | Replaced by the VendorBridge logo/brand mark | Placeholder, no feature implied |
+| 1 | Screen 5 stepper (1-2-3) has no labels; wireframe shows all fields on one canvas | Keep the wireframe layout on desktop; map steps to sections: **1 Details** (title, category, deadline, description), **2 Items & Vendors** (line items, assign vendors), **3 Attachments & Send** (attachments, actions). On mobile, show one step at a time. | Preserve layout while making the stepper meaningful |
+| 2 | RFQ list and RFQ detail pages are not in the mockup | Design by extension using the Vendors page pattern (search, chips, table, drawer/detail) | Required by the brief |
+| 3 | Screen 7 button "Select & Approve" | Label **"Select"** on all columns; helper text "Approval starts in Week 3" | Approval workflow does not exist yet; label must not promise it. Restore label in Week 3. |
+| 4 | Screen 6 has only "Notes / terms" text | Add structured **Payment terms (days)** | Comparison screen shows "Payment terms: 30 days" and must be comparable |
+| 5 | Vendor form (Week 1) | Add optional **Rating (0–5)** | Comparison shows vendor rating |
+| 6 | Vendor drawer (Week 1) | Add **Portal users** section | Needed to link vendor logins to vendor records |
+| 7 | Mockup sample-data errors | Screen 6 subtotal "1,69,599" is a typo (87,500 + 82,000 = 1,69,500; GST 18% = 30,510; grand total 2,00,010 ✓); second row item label "Tech Core LTD" is a vendor name in the item column. Implement correct arithmetic and use item names in item cells. | Data/typo, not design |
 
-## 10. Open Questions
+## 9. Open Questions
 
-1. Confirm Week 2–4 scope assumptions (Section 4).
-2. Should the **Vendor** role be linked to a vendor record (self-service profile) in a later week?
-3. Is a hosted deployment expected for Week 1?
-4. Currency and locale: assume INR (₹) and Indian GST formats per the mockup.
+1. **Sealed bids:** should officers see quotations before the deadline, or only after? Default for Week 2: visible immediately. A feature flag (`SEALED_BIDS`) is designed in but off.
+2. May Officers manage each other's RFQs, or only their own? Default: own only (Admin overrides).
+3. Is a vendor user ever tied to more than one vendor company?
+4. Should vendors be able to decline an RFQ explicitly?
+5. Storage for deployment: local disk is fine for demo; confirm if S3-compatible storage is available.
+6. Confirm stepper mapping (Deviation #1) and the "Select" label (Deviation #3).
+7. Should comparison be exportable (CSV/PDF)? Currently backlog.

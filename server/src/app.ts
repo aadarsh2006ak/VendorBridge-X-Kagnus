@@ -63,5 +63,13 @@ app.use('/api/v1/vendors', vendorRouter);
 import { dashboardRouter } from './modules/dashboard/dashboard.routes.js';
 app.use('/api/v1/dashboard', dashboardRouter);
 
+// RFQ Routes
+import { rfqRouter } from './modules/rfqs/rfq.routes.js';
+app.use('/api/v1/rfqs', rfqRouter);
+
+// Vendor Portal Routes
+import { vendorPortalRouter } from './modules/vendor-portal/vendor-portal.routes.js';
+app.use('/api/v1/vendor-portal', vendorPortalRouter);
+
 // Central error handler
 app.use(errorHandler);

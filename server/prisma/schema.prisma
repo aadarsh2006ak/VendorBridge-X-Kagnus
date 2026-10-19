@@ -20,6 +20,24 @@ enum VendorStatus {
   BLOCKED
 }
 
+enum RfqStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  QUOTATION_SELECTED
+  CANCELLED
+}
+
+enum QuotationStatus {
+  DRAFT
+  SUBMITTED
+}
+
+model Counter {
+  key   String @id
+  value Int
+}
+
 model User {
   id             String   @id @default(uuid())
   firstName      String
@@ -34,10 +52,13 @@ model User {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  sessions     Session[]
-  resetTokens  PasswordResetToken[]
-  vendors      Vendor[]
-  auditLogs    AuditLog[]
+  sessions      Session[]
+  resetTokens   PasswordResetToken[]
+  vendors       Vendor[]
+  auditLogs     AuditLog[]
+  vendorMembers VendorMember[]
+  createdRfqs   Rfq[]                @relation("RfqCreator")
+  selectedRfqs  Rfq[]                @relation("RfqSelector")
 }
 
 model Session {
@@ -77,11 +98,16 @@ model Vendor {
   address      String?
   notes        String?
   status       VendorStatus @default(PENDING)
+  rating       Float?
   deletedAt    DateTime?    // Soft delete timestamp
   createdById  String
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   createdBy    User         @relation(fields: [createdById], references: [id])
+
+  members      VendorMember[]
+  rfqs         RfqVendor[]
+  quotations   Quotation[]
 
   @@index([status])
   @@index([category])
@@ -89,11 +115,151 @@ model Vendor {
   @@index([deletedAt])
 }
 
-// Write-once. No update or delete code paths may exist for this table.
+model VendorMember {
+  id        String   @id @default(uuid())
+  vendorId  String
+  userId    String   @unique // In Week 2, one user belongs to one vendor company
+  createdAt DateTime @default(now())
+
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+}
+
+model Rfq {
+  id                  String          @id @default(uuid())
+  code                String          @unique // e.g. RFQ-2026-0001
+  title               String
+  category            String
+  description         String?
+  deadline            DateTime
+  status              RfqStatus       @default(DRAFT)
+  version             Int             @default(1) // Optimistic locking
+  publishedAt         DateTime?
+  closedAt            DateTime?
+  cancelledAt         DateTime?
+  cancelReason        String?
+  selectedQuotationId String?         @unique
+  selectedById        String?
+  selectedAt          DateTime?
+  createdById         String
+  deletedAt           DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  createdBy           User            @relation("RfqCreator", fields: [createdById], references: [id])
+  selectedBy          User?           @relation("RfqSelector", fields: [selectedById], references: [id])
+  items               RfqItem[]
+  vendors             RfqVendor[]
+  attachments         RfqAttachment[]
+  quotations          Quotation[]     @relation("RfqQuotations")
+
+  @@index([status, deadline])
+  @@index([createdById, status])
+  @@index([category])
+  @@index([deletedAt])
+}
+
+model RfqItem {
+  id          String          @id @default(uuid())
+  rfqId       String
+  position    Int
+  name        String
+  description String?
+  quantity    Decimal         @db.Decimal(12, 2)
+  unit        String
+  rfq         Rfq             @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  quotedItems QuotationItem[]
+
+  @@unique([rfqId, position])
+  @@index([rfqId])
+}
+
+model RfqVendor {
+  rfqId     String
+  vendorId  String
+  invitedAt DateTime  @default(now())
+  viewedAt  DateTime?
+  rfq       Rfq       @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  vendor    Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@id([rfqId, vendorId])
+  @@index([vendorId])
+}
+
+model RfqAttachment {
+  id           String   @id @default(uuid())
+  rfqId        String
+  originalName String
+  fileName     String
+  fileSize     Int
+  mimeType     String
+  path         String
+  createdAt    DateTime @default(now())
+  rfq          Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  @@index([rfqId])
+}
+
+model Quotation {
+  id               String              @id @default(uuid())
+  rfqId            String
+  vendorId         String
+  status           QuotationStatus     @default(DRAFT)
+  version          Int                 @default(1)
+  taxRate          Decimal             @db.Decimal(5, 2) @default(18.00)
+  subtotal         Decimal             @db.Decimal(14, 2)
+  taxAmount        Decimal             @db.Decimal(14, 2)
+  grandTotal       Decimal             @db.Decimal(14, 2)
+  deliveryDays     Int?
+  paymentTermsDays Int?
+  notes            String?
+  submittedAt      DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  rfq              Rfq                 @relation("RfqQuotations", fields: [rfqId], references: [id], onDelete: Cascade)
+  vendor           Vendor              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  items            QuotationItem[]
+  revisions        QuotationRevision[]
+
+  @@unique([rfqId, vendorId]) // BR-5: One quotation per (RFQ, Vendor)
+  @@index([rfqId, status, grandTotal])
+  @@index([vendorId])
+}
+
+model QuotationItem {
+  id           String    @id @default(uuid())
+  quotationId  String
+  rfqItemId    String
+  unitPrice    Decimal   @db.Decimal(14, 2)
+  deliveryDays Int
+  lineTotal    Decimal   @db.Decimal(14, 2)
+
+  quotation    Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  rfqItem      RfqItem   @relation(fields: [rfqItemId], references: [id], onDelete: Cascade)
+
+  @@index([quotationId])
+  @@index([rfqItemId])
+}
+
+model QuotationRevision {
+  id          String    @id @default(uuid())
+  quotationId String
+  revision    Int
+  snapshot    Json
+  createdAt   DateTime  @default(now())
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@index([quotationId, revision])
+}
+
+// Write-once forensic audit log table.
 model AuditLog {
   id         String   @id @default(uuid())
   actorId    String?
-  action     String   // e.g. AUTH_LOGIN, VENDOR_CREATED, VENDOR_UPDATED, VENDOR_DELETED
+  action     String   // e.g. AUTH_LOGIN, VENDOR_CREATED, RFQ_CREATED, QUOTATION_SUBMITTED
   entityType String
   entityId   String?
   metadata   Json?

@@ -1,109 +1,194 @@
-# VendorBridge — Engineering Rules
+# VendorBridge — Engineering Rules (Week 2)
 
-These rules apply to every contributor and AI coding assistant working in `VendorBridge-X-Kagnus`. Read `prd.md`, `architecture.md`, `design.md`, and `memory.md` before starting work.
+All Week 1 rules still apply (backend is the authority, no fake features, no secrets in the client, Conventional Commits, role × endpoint tests, etc.). This document **adds** the rules that keep the codebase maintainable and scalable as Weeks 3–4 land. Rules are written so they can be checked by a tool or a reviewer; where possible CI enforces them.
 
-## 1. Golden Rules
+## 1. Golden Rules (Week 2)
 
-1. **One repository, all four weeks.** Never create a new repo per week. Each week builds on the last.
-2. **Backend is the authority.** Authentication, authorization, and validation are enforced on the server. Frontend checks exist only for UX.
-3. **Follow the design.** Use the Excalidraw mockup for layout, fields, navigation, and hierarchy. Do not redesign or remove specified features without approval. Log any deviation in `prd.md` §9 and `memory.md`.
-4. **No fake features.** Static UI must never be presented as implemented. Unbuilt modules show honest empty / "coming soon" states.
-5. **Persist everything real.** No in-memory arrays, no `localStorage` as a data store. Vendor data lives in PostgreSQL.
-6. **Never expose secrets.** No credentials in the frontend, in logs, in commits, or in screenshots.
-7. **Document honestly.** Incomplete work and known limitations go in the README and completion report.
-8. **Stay in scope.** Week 1 = Screens 1–4 only. Do not start RFQ, quotation, approval, PO, invoice, report, or activity features.
+1. **Real data only.** No hardcoded RFQs, quotations, or comparison data anywhere outside seed scripts and tests.
+2. **Every quotation belongs to the right RFQ and vendor** — enforced by service logic **and** database constraints.
+3. **Server computes, client previews.** Totals, lowest price, effective status, and permissions are authoritative on the server.
+4. **Vendors see only their own data.** Object-level access is a query constraint, not a post-fetch `if`.
+5. **Change structure deliberately.** New behavior goes into the established module layout; do not invent parallel patterns. If a pattern must change, write an ADR first.
+6. **Stay in scope.** No approvals, POs, invoices, reports, or audit UI.
 
-## 2. Security Rules
+## 2. Maintainability Rules
 
-- Every non-public route has `authenticate`; every restricted route also has `authorize(permission)`.
-- Permissions come from the single map in `server/src/config/permissions.ts`. No inline role string comparisons in controllers.
-- Hash passwords with argon2id (or bcrypt cost ≥ 12). Hash refresh and reset tokens (SHA-256) before storing.
-- Auth cookies: `httpOnly`, `Secure` in production, `SameSite=Lax`. Never put tokens in `localStorage`, URLs (except the one-time reset token), or response bodies.
-- Auth errors are generic: "Invalid email or password". Forgot-password always returns the same response.
-- Rate-limit login, register, and forgot-password.
-- Public registration cannot create an Admin without the server-side invite code.
-- Validate **all** request bodies, params, and queries with Zod before use. Reject unknown fields (`.strict()`).
-- Use Prisma query APIs only. No string-concatenated SQL. If raw SQL is unavoidable, use parameterized `$queryRaw`.
-- Do not log passwords, tokens, cookies, or reset links. Do not leak stack traces to clients.
-- `.env` is git-ignored. Commit `.env.example` with placeholder values only.
-- The `AuditLog` table is **write-once**: no update or delete code paths, ever.
+### 2.1 Module boundaries
+- Server code lives in `modules/<name>/`. Other modules may import **only** from `modules/<name>/index.ts`.
+- Never import another module's `*.repository.ts`, `*.service.ts` internals, or Prisma models directly.
+- No circular dependencies. Direction for Week 2: `quotations → rfqs → vendors`; `comparison` and `vendor-portal` sit on top. A lower module that needs to react to a higher one uses a **domain event**.
+- `dependency-cruiser` runs in CI; a violation fails the build. Do not add exceptions without an ADR.
+- Client code lives in `features/<name>/`. Features do not import each other's internals; shared things go to `components/ui`, `lib/`, or `@vendorbridge/shared`.
 
-## 3. Backend Rules
+### 2.2 Layering (server)
+| Layer | Allowed | Forbidden |
+|---|---|---|
+| `routes` | Path, middleware, controller wiring | Logic |
+| `controller` | Parse input with shared schema, call one service function, map to DTO, respond | Business rules, Prisma, multiple service orchestration |
+| `service` | Use cases, transactions, rule checks, emit events | `req`/`res`, SQL/Prisma calls, building HTTP responses |
+| `repository` | **All** Prisma access, explicit `select`/`include`, scoping helpers | Business rules, throwing HTTP errors |
+| `policy` | Pure `(user, entity) → boolean` object-level rules | I/O |
+| `mapper` | Entity → audience DTO | Queries |
+| `domain` pure functions | Totals, state transitions, comparison rules | Imports from Express, Prisma, or React |
 
-- Layering: `routes → controller → service → prisma`. Controllers parse/respond only; business logic lives in services; only services touch Prisma.
-- All errors flow through one `errorHandler` and the standard shape `{ error: { code, message, details? } }`. Throw typed `AppError` subclasses.
-- Use correct status codes: 400, 401, 403, 404, 409, 429, 500 (see architecture §7).
-- Return only whitelisted fields. Never return `passwordHash`, token hashes, or internal columns.
-- Soft delete vendors (`deletedAt`). Every vendor query excludes soft-deleted rows by default.
-- List endpoints are paginated with a max `limit` of 100.
-- Environment is parsed and validated at boot; fail fast on missing config.
-- Write an audit log entry for: login, logout, register, password reset, vendor create/update/delete.
-- Database changes go through Prisma migrations only. Never edit an applied migration.
+- Dependencies are **injected** (constructor/factory args) and wired in `container.ts`. Modules never call `new PrismaClient()`, `new Date()`, or read `process.env` directly.
+- Use the `Clock` for "now", `StorageProvider` for files, `Mailer` for email, `EventBus` for side effects.
 
-## 4. Frontend Rules
+### 2.3 Shared contracts
+- Enums, limits, Zod schemas, DTO types, error codes, permission map, state tables, and the totals calculator live **only** in `shared/`.
+- Never redefine a type or validation rule that exists in `shared/`. Never copy constants between client and server.
+- `shared/` has no Node- or browser-specific APIs and no dependency beyond `zod` and `decimal.js`.
+- A change to `shared/` that alters a contract requires updating tests on both sides in the same PR.
 
-- TypeScript strict mode. No `any` without a justifying comment.
-- Build UI from shared components in `components/ui`. No one-off styled buttons or inputs.
-- Style only with design tokens from `design.md` (Tailwind theme). No hardcoded hex values in components.
-- Server data via TanStack Query. Do not duplicate server data in global state.
-- Every data view handles four states: **loading, empty, error, success**.
-- Forms use React Hook Form + Zod. Show field-level errors inline and map API `details` back onto fields.
-- API errors surface as toasts or inline messages. Never swallow errors silently or use `alert()`.
-- Route guards and hidden buttons are UX; always assume the API will reject unauthorized calls and handle `401`/`403` gracefully.
-- Accessibility: labels on all inputs, visible focus rings, `aria-*` on modals/drawers, keyboard-operable table actions, never color-only status (badge includes text).
-- Keep components small (< ~200 lines). Extract hooks for data logic.
-- Only `VITE_`-prefixed, non-secret variables in the client.
+### 2.4 DTOs and API hygiene
+- Entities (Prisma types) never cross the service boundary outward. Controllers return mapper-built DTOs.
+- Separate DTOs per audience (`RfqOfficerDto`, `RfqVendorDto`). Vendor DTOs must be built from a whitelist, not by deleting fields from the officer DTO.
+- Request bodies use `.strict()` schemas (unknown fields rejected).
+- Additive API changes only within `/api/v1`; breaking changes require `/api/v2` and an ADR.
+- Every list endpoint is paginated (default 10–20, max 100) and has a deterministic sort with a unique tiebreaker (`id`).
 
-## 5. Code Style and Naming
-
-| Thing | Convention |
+### 2.5 Size and complexity limits (lint-enforced where possible)
+| Item | Limit |
 |---|---|
-| Files (components) | `PascalCase.tsx` |
-| Files (other) | `kebab-case.ts` |
-| Variables / functions | `camelCase` |
-| Types / interfaces | `PascalCase` |
-| Constants / env keys | `UPPER_SNAKE_CASE` |
-| DB tables / columns | Prisma `PascalCase` models, `camelCase` fields |
-| REST paths | plural nouns, kebab-case, versioned `/api/v1` |
+| File length | ≤ 300 lines (soft), 400 (hard; justify in PR) |
+| Function length | ≤ 50 lines |
+| Cyclomatic complexity | ≤ 10 per function |
+| Function parameters | ≤ 4 (use an options object beyond that) |
+| React component | ≤ 200 lines; extract hooks and subcomponents |
+| Nesting depth | ≤ 3 |
 
-- ESLint + Prettier must pass before commit (Husky + lint-staged).
-- No dead code, no commented-out blocks, no stray `console.log`.
-- Prefer small pure functions; add comments only for *why*, not *what*.
+### 2.6 Naming and style
+- Files: components `PascalCase.tsx`; everything else `kebab-case` with role suffix (`rfq.service.ts`, `rfq.policy.ts`, `use-rfqs.ts`).
+- Functions are verbs (`publishRfq`, `computeQuotationTotals`); booleans are questions (`isLowest`, `canEdit`).
+- No abbreviations except well-known ones (`id`, `dto`, `rfq`, `url`).
+- No `any`, no non-null `!` without a comment, no `@ts-ignore` (use `@ts-expect-error` with reason).
+- No dead code, commented-out code, TODOs without an issue/tasks.md reference.
+- Constants are named and live in `shared/constants`; no magic numbers (`10 * 1024 * 1024` → `UPLOAD_MAX_BYTES`).
 
-## 6. Git Workflow
+### 2.7 Error handling
+- Throw typed `AppError` subclasses from services/domain; only the central `errorHandler` converts to HTTP.
+- Use codes from `shared/errors.ts`; never invent ad-hoc strings. Add a new code there, document it in `architecture.md` §7.5.
+- Never swallow errors. Event handlers catch, log with context (`requestId`, entity id), and continue.
+- Never leak internals (stack traces, SQL, storage paths) in responses.
 
-- Branches: `main` (always working), `feat/<area>-<short-desc>`, `fix/<short-desc>`.
-- Conventional commits: `feat(vendors): add GST validation`, `fix(auth): rotate refresh token on use`, `docs: update README`, `test: add role matrix`.
-- Small, focused commits; one logical change each. Open a PR (or self-review checklist) before merging to `main`.
-- Never commit: `.env`, `node_modules`, build output, real credentials, personal data.
-- Tag the Week 1 submission `week-1`.
+### 2.8 Documentation
+- Public functions of a module (`index.ts` exports) have a one-line JSDoc stating the contract and thrown error codes.
+- Comments explain **why** (a business rule ID like `BR-4`), not what.
+- Any non-obvious rule references its ID from `prd.md` §3a in code and tests (`// BR-4: deadline enforced by server time`).
+- Decisions that cost more than a day to reverse get an ADR in `docs/adr/`.
 
-## 7. Testing Rules
+## 3. Scalability Rules
 
-- Every API endpoint has tests for: success, validation failure, unauthenticated (401), and wrong role (403) where applicable.
-- Maintain the **role × vendor-endpoint matrix test** (Admin, Officer, Manager, Vendor, anonymous).
-- Add a test for every bug fix.
-- Tests must be deterministic and use a separate test database; never run against dev data.
-- Before marking any task done, run lint, type-check, and tests.
+### 3.1 Data and queries
+- **No N+1.** Fetch related rows with `include/select` or a batched `IN` query. Query-count tests exist for list, detail, and comparison.
+- **Select only what you need** — no `SELECT *` into DTOs, no loading blobs/JSON snapshots in lists.
+- **Pagination or hard caps** on every collection. Child collections are capped by validation (items ≤ 50, vendors ≤ 20, attachments ≤ 5, comparison ≤ 20 columns).
+- **Index with the query.** Any new filter/sort column used in a list endpoint ships with an index in the same migration and a note in `architecture.md` §12.
+- **No unbounded in-memory processing** of table data. Aggregations happen in SQL.
+- **Transactions** for any multi-row write; keep them short; no network calls (email, storage) inside a transaction.
+- Concurrency: writes to RFQ/quotation require `version` (optimistic lock); state-changing operations lock the RFQ row (`FOR UPDATE`) when rules depend on other rows (selection, publish).
+- Counters/sequences are allocated atomically in the DB — never `max(id)+1`.
 
-## 8. Definition of Done (per task)
+### 3.2 Statelessness and infrastructure
+- No server-side in-memory state that matters (caches, sessions, upload buffers beyond a request). The API must run as N identical instances.
+- Files only through `StorageProvider`; never write to arbitrary paths; never serve from a public static directory.
+- Background jobs must be **idempotent** and **multi-instance safe** (advisory lock), and process in bounded batches.
+- Side effects go through domain events; handlers are idempotent so a future queue can retry them safely.
+- Long or slow work (email, file processing) never blocks the request path.
 
-- [ ] Works end to end (UI → API → DB) and survives a page refresh
-- [ ] Validation and error handling in place on both sides
-- [ ] Role restrictions enforced on the backend and tested
-- [ ] Loading, empty, and error states handled
-- [ ] Lint, types, and tests pass
-- [ ] No secrets or debug code committed
-- [ ] README / docs updated if setup or behavior changed
-- [ ] `tasks.md` checkbox ticked and `memory.md` updated
+### 3.3 Money, time, and IDs
+- Money: `Decimal` in DB, `string` in JSON, `decimal.js` in code. **Never** `number` arithmetic for currency. Rounding: half-up, 2 decimals, once per line and once for tax.
+- Time: store UTC `timestamptz`; compute with the injected `Clock`; display formatting only in the client. Tests for deadlines use `FixedClock`.
+- IDs: UUID primary keys internally; human-readable codes (`RFQ-2026-0001`) are display/search identifiers allocated by the DB counter.
 
-## 9. Instructions for AI Coding Assistants
+### 3.4 Frontend scalability
+- Route-level code splitting for heavy pages (create RFQ, comparison).
+- Server state in TanStack Query with key factories; no copying server data into global state.
+- Lists are paginated; large option lists (vendor picker) use async search combobox, not loading all vendors.
+- Memoize only with evidence; prefer structuring components so re-renders are cheap.
+- Bundle budget: initial JS ≤ 250 KB gzipped; check in CI (warn) via build output.
 
-1. Read all six docs at the start of every session. `memory.md` is the running state.
-2. Work on **one task at a time** from `tasks.md`, in order, unless told otherwise.
-3. Do not invent requirements. If something is ambiguous, check the docs, then ask, then record the decision in `memory.md`.
-4. Do not expand scope into Weeks 2–4.
-5. Do not add libraries outside the approved stack without noting the reason in `memory.md`.
-6. After each task: update `tasks.md` status and append decisions/changes to `memory.md`.
-7. Never claim something works without running it. Report test results truthfully, including failures.
-8. Never weaken security (disable CORS, skip auth, relax validation) to make something pass.
+## 4. Security Rules (additions)
+
+- Every new route declares: authentication, capability (`authorize`), object-level policy/scoping, validation schema, and rate-limit tier. A PR adding a route without all five is rejected.
+- Object-level denial returns `404`; role-level denial returns `403`.
+- Vendor-facing queries are **always** constrained by the caller's `vendorIds` inside the repository.
+- Uploads: allow-list extensions **and** verify magic bytes; enforce size/count caps; generate storage keys server-side; sanitize display names; force `Content-Disposition: attachment`; authorize every download.
+- Do not trust client-sent totals, statuses, vendor IDs for the caller, `deadline` checks, or `isLowest`.
+- Do not include other vendors' identities, quotations, or internal notes in any vendor-audience response.
+- Audit log entries are written for: RFQ create/publish/close/reopen/cancel/delete, vendor assignment changes, attachment add/remove, quotation save/submit/edit, selection/clear selection, vendor-member link/unlink. Audit remains insert-only.
+- Log redaction: never log file contents, cookies, tokens, or full request bodies.
+
+## 5. Database and Migration Rules
+
+- Schema changes only via Prisma migrations; raw-SQL constraints live in a dedicated, named migration file with a comment per statement.
+- **Expand → migrate → contract** for any change touching existing columns: add new, backfill, switch code, remove old in a later migration. Never rename/drop in one step.
+- Migrations are forward-only and must apply cleanly on an empty DB and on the Week 1 seeded DB (CI checks both).
+- Every FK states its `onDelete` intent (`Cascade` for owned children, restrict for references).
+- Use CHECK constraints for invariants that are cheap to express.
+- Seeds are deterministic and idempotent; demo credentials appear only in README's dev section.
+
+## 6. Testing Rules (additions)
+
+- Pure domain logic (totals, state machine, comparison rules) has table-driven unit tests; the mockup arithmetic (`169500 / 30510 / 200010`) is a golden test.
+- Every new route is added to the **role × endpoint × state matrix**; IDOR tests cover vendor A reading/writing vendor B's data and an unassigned vendor.
+- Tests that depend on time use `FixedClock`; no `sleep` for deadlines.
+- Integration tests use a real Postgres (service container), not mocks, for constraint and concurrency behavior.
+- Use test **builders** (`buildRfq`, `buildQuotation`, `buildVendor`), not copied JSON blobs.
+- Coverage gates: domain + services ≥ 85%, shared ≥ 90%. Don't game with assertion-free tests.
+- A bug fix PR includes a failing-then-passing test.
+- Flaky tests are fixed or quarantined with an issue the same day; never retried blindly.
+
+## 7. Git, PR, and Review Rules
+
+- Branches: `feat/rfq-create`, `feat/quotation-submit`, `refactor/shared-package`, `fix/...`. Branch from `main`; rebase before merge.
+- PRs are small and single-purpose: **target < 400 changed lines** (excluding generated/migrations/lockfiles). Split larger work (e.g., refactor PR first, feature PR second).
+- Refactors and features are **never mixed** in one commit.
+- PR description: what/why, linked task IDs, screenshots for UI, migration notes, test evidence, risks.
+- CI must be green; at least one self-review pass against the checklist below (or reviewer approval).
+- Dependencies: adding a library requires a one-line justification in the PR and `memory.md` (size, maintenance, license, alternatives). Prefer the standard library and existing deps.
+- Never commit generated artifacts, uploads (`var/uploads`), `.env`, or large binaries.
+
+### Review checklist
+- [ ] Respects module boundaries and layering
+- [ ] Uses shared schemas/types; no duplicated rules
+- [ ] Route has auth + capability + policy + validation + rate-limit
+- [ ] Object-level access scoped in the repository
+- [ ] No N+1; new filters/sorts indexed
+- [ ] Money via Decimal; time via Clock
+- [ ] State changes go through the state machine
+- [ ] Errors typed; side effects via events and non-fatal
+- [ ] Loading / empty / error states in UI
+- [ ] Tests (unit + integration + matrix) and docs updated
+- [ ] No secrets, debug code, or dead code
+
+## 8. Tech Debt Policy
+
+- Shortcuts are allowed only if recorded in `memory.md` §9 (Tech Debt Register) with: what, why, impact, payoff trigger, owner.
+- At most **5 open debt items** at any time; Week 2 ends with a debt review.
+- Anything touching security or data integrity is never deferred.
+- "Boy Scout rule": when you touch a Week 1 file for Week 2 work, bring it up to current patterns only if it is within the same PR's scope; otherwise log it as debt.
+
+## 9. Definition of Done (per task)
+
+- [ ] Works UI → API → DB and survives refresh
+- [ ] Server-side validation, authorization, and error handling in place
+- [ ] Business rules referenced by ID (`BR-n`) and covered by tests
+- [ ] Matrix/IDOR tests updated for any route change
+- [ ] Lint, typecheck, boundary check, tests, build all green locally and in CI
+- [ ] Loading/empty/error states handled; accessible
+- [ ] Docs updated (`architecture.md`, README, ADR if applicable)
+- [ ] `tasks.md` ticked; `memory.md` decisions/debt updated
+
+## 10. Instructions for AI Coding Assistants
+
+1. Read the six Week 2 docs, then Week 1 docs, before coding. `memory.md` is the live state.
+2. Implement tasks in `tasks.md` order; one task per change set. Do the **foundation phase (Phase 0)** before feature work — it is what makes later tasks small.
+3. Follow module layout and layering exactly; copy the pattern from the nearest existing module rather than inventing structure.
+4. Put contracts in `shared/` first, then server, then client.
+5. Never put business logic in controllers or React components; never access Prisma outside repositories.
+6. Do not add dependencies, change the stack, or alter the schema outside a task without recording why in `memory.md`.
+7. When requirements are ambiguous, check `prd.md` §3a and §9; if still unclear, ask and record the answer as a decision.
+8. Run lint, typecheck, boundary check, and tests before claiming done; report failures honestly.
+9. Do not weaken constraints, validation, or authorization to make a test or demo pass.
+10. Prefer boring, explicit code over clever abstractions. Add an abstraction only when a second concrete use exists or the rules above require it.

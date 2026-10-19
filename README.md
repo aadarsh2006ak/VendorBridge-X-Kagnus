@@ -1,5 +1,5 @@
 # VendorBridge — Procurement & Vendor Management ERP
-> **Week 1 Milestone:** Foundation, Authentication, Role-Aware Dashboard & Vendor Management  
+> **Current Milestone:** Week 2 — RFQ & Quotation Management (Built on Week 1 Foundation)  
 > **Repository:** `VendorBridge-X-Kagnus`  
 > **Source of Truth:** VendorBridge 11-Screen Excalidraw Specification
 
@@ -9,29 +9,37 @@
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-38bdf8.svg)](https://tailwindcss.com/)
 [![Prisma](https://img.shields.io/badge/Prisma-5.x-2d3748.svg)](https://www.prisma.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%2F18-336791.svg)](https://www.postgresql.org/)
-[![Tests](https://img.shields.io/badge/Vitest-46%20passed-brightgreen.svg)](https://vitest.dev/)
+[![Tests](https://img.shields.io/badge/Vitest-48%20passed-brightgreen.svg)](https://vitest.dev/)
 
 ---
 
 ## 1. Executive Summary
 
-**VendorBridge** is an enterprise-grade Procurement & Vendor Management ERP designed to streamline the entire source-to-pay lifecycle: from vendor onboarding, RFQs, and competitive quotations, through manager approvals, purchase orders, 3-way matching invoices, and analytical audit logs.
+**VendorBridge** is an enterprise-grade Procurement & Vendor Management ERP designed to streamline the entire source-to-pay lifecycle. Following the canonical 11-screen Excalidraw specification, the project is structured into 4 sequential milestone weeks:
 
-### Week 1 Deliverables Overview:
-1. **Deliverable 1: Authentication & Authorization (RBAC)**
-   - Argon2id password hashing + JWT access token (15m) + rotating refresh token (7d) stored in secure `httpOnly`, `SameSite=Lax` cookies.
-   - Server-enforced Role-Based Access Control matrix across four roles: `ADMIN`, `PROCUREMENT_OFFICER`, `MANAGER`, and `VENDOR`.
-   - Admin registration safeguard (`ADMIN_INVITE_CODE`), rate limiting, CSRF header checks, session revocation, and forgot/reset password flow.
-2. **Deliverable 2: Role-Aware Dashboard (Screen 3)**
-   - 4 live StatCards (`Total Vendors`, `Active Vendors`, `Pending Approval`, `Blocked Vendors`) queried from the database.
-   - Quick action shortcuts (permission-aware "+ Add Vendor" modal, "View Vendors", "Review Pending").
-   - Honest, informative empty states for future modules scheduled for Weeks 2–4 (Purchase Orders, Spending Analytics).
-3. **Deliverable 3: Complete Vendor Management (Screen 4)**
-   - Full CRUD: Create, View (side drawer), Update (modal), and Soft-Delete (Admin-only confirmation dialog).
-   - Case-insensitive search across legal name, trade name, GSTIN, and contact details.
-   - Status filter chips with real-time database counts (`All`, `Active`, `Pending`, `Blocked`) and category dropdown filters.
-   - Strict 15-character uppercase Indian GSTIN validation regex with uniqueness enforcement in PostgreSQL.
-   - **Zero fake features**: All vendor data is persisted in PostgreSQL and survives page refreshes, hard reloads, and server restarts.
+- **Week 1:** Authentication, Role-Based Access Control, Role-Aware Dashboard, and Complete Vendor Management.
+- **Week 2 (Current):** Request for Quotation (RFQ) Lifecycle, Vendor Portal Quotation Submission, and Quotation Comparison Matrix with Lowest-Price Highlighting.
+- **Week 3:** Multi-Level Approval Workflows & Manager Sign-offs.
+- **Week 4:** Purchase Orders, 3-Way Matching Invoices, and Analytics.
+
+### Week 2 Deliverables:
+1. **RFQ Creation & Lifecycle (Screen 5):**
+   - Atomic concurrency-safe sequence generator `RFQ-YYYY-NNNN` using PostgreSQL `Counter` table.
+   - 3-step section layout: General Details, Items & Quantities dynamic editor, and Vendor Assignment checklist with category filters and ratings.
+   - Dual-action workflows: Save as Draft or Publish immediately (with validation: ≥1 line item, ≥1 active vendor, and future deadline).
+   - Lifecycle state transitions: `DRAFT → OPEN → CLOSED → QUOTATION_SELECTED → CANCELLED` with optimistic concurrency control (`version`).
+2. **Vendor Portal Quotation Submission (Screen 6):**
+   - Dedicated vendor workspace (`/vendor-portal/rfqs/:id/quote`) for invited vendors.
+   - Strict object-level security: unassigned vendors receive `404 Not Found` (preventing ID leakage).
+   - Real-time line item pricing with delivery days and live calculated totals.
+   - Pure domain financial calculations via `Prisma.Decimal` and `ROUND_HALF_UP` to 2 decimal places (BR-7).
+   - Strict deadline enforcement: submissions automatically lock once the deadline passes (BR-4).
+   - Complete bid requirement (BR-6) and snapshot revision history tracking.
+3. **Quotation Comparison Matrix (Screen 7):**
+   - Side-by-side vendor evaluation matrix showing pricing, commercial terms, delivery timelines, and vendor ratings.
+   - **Lowest Price Highlighting (BR-10):** Prominent green badge and border marking the lowest valid comparable quotation (L1) and lowest unit prices per line item.
+   - Multi-parameter sorting (Price, Delivery Days, Rating, Submission Date) and filtering (Max Price, Max Days, Min Rating).
+   - One-click winning quotation selection with optimistic locking and status transition to `QUOTATION_SELECTED`.
 
 ---
 
@@ -45,10 +53,10 @@
 | **Form Handling** | React Hook Form + Zod | Schema-driven client validation matching backend DTO schemas |
 | **Routing** | React Router v6 | Protected routes, role guards, nested layouts |
 | **Backend API** | Node.js 20+, Express, TypeScript | Modular REST API with centralized error handling |
-| **Database & ORM** | PostgreSQL (v16/18) + Prisma ORM | Relational persistence, migrations, and partial unique index on `gstNumber` |
+| **Database & ORM** | PostgreSQL (v16/18) + Prisma ORM | Relational persistence, migrations, and foreign keys |
 | **Auth & Security** | Argon2id, JWT, httpOnly Cookies, Helmet, Rate-Limit | Secure session handling without exposing tokens to JavaScript |
-| **Audit Log** | Prisma insert-only `AuditLog` service | Forensic traceability for all vendor CRUD events |
-| **Testing** | Vitest, Supertest | 46 integration tests including complete 25-cell RBAC matrix |
+| **Audit Log** | Prisma insert-only `AuditLog` service | Forensic traceability for all vendor, RFQ, and quotation events |
+| **Testing** | Vitest, Supertest | 48 integration and unit tests passing |
 
 ---
 
@@ -81,7 +89,8 @@
                     ┌─────────────────────────┐
                     │ PostgreSQL Database     │
                     │ (Tables: User, Session, │
-                    │  Vendor, AuditLog)      │
+                    │  Vendor, Rfq, Quotation,│
+                    │  QuotationItem, Counter)│
                     └─────────────────────────┘
 ```
 
@@ -92,130 +101,99 @@
 | `GET /api/v1/auth/me` | Current Profile | 200 | 200 | 200 | 200 | 401 |
 | `GET /api/v1/dashboard/summary` | Dashboard Stats | 200 | 200 | 200 | 200 | 401 |
 | `GET /api/v1/vendors` | List Vendors | 200 | 200 | 200 | **403** | 401 |
-| `GET /api/v1/vendors/:id` | View Vendor Detail | 200 | 200 | 200 | **403** | 401 |
 | `POST /api/v1/vendors` | Create Vendor | 201 | 201 | **403** | **403** | 401 |
-| `PATCH /api/v1/vendors/:id` | Update Vendor | 200 | 200 | **403** | **403** | 401 |
-| `DELETE /api/v1/vendors/:id` | Soft Delete Vendor | 200 | **403** | **403** | **403** | 401 |
-
-> **Backend Authority Note:** Every single permission check is enforced by Express middleware on the backend. Frontend hiding of buttons is purely for clean user experience.
+| `GET /api/v1/rfqs` | List RFQs | 200 | 200 | 200 | **403** | 401 |
+| `POST /api/v1/rfqs` | Create RFQ | 201 | 201 | **403** | **403** | 401 |
+| `GET /api/v1/rfqs/:id` | View RFQ Detail | 200 | 200 | 200 | **403** | 401 |
+| `PUT /api/v1/rfqs/:id` | Update RFQ | 200 | 200 | **403** | **403** | 401 |
+| `POST /api/v1/rfqs/:id/publish` | Publish RFQ | 200 | 200 | **403** | **403** | 401 |
+| `POST /api/v1/rfqs/:id/close` | Close RFQ | 200 | 200 | **403** | **403** | 401 |
+| `POST /api/v1/rfqs/:id/cancel` | Cancel RFQ | 200 | 200 | **403** | **403** | 401 |
+| `GET /api/v1/rfqs/:id/comparison` | Compare Quotations | 200 | 200 | 200 | **403** | 401 |
+| `PUT /api/v1/rfqs/:id/selection` | Select Winning Quote | 200 | 200 | **403** | **403** | 401 |
+| `GET /api/v1/vendor-portal/rfqs` | My Assigned RFQs | **403** | **403** | **403** | 200 | 401 |
+| `GET /api/v1/vendor-portal/rfqs/:id` | View Assigned RFQ | **403** | **403** | **403** | 200 | 401 |
+| `PUT /api/v1/vendor-portal/rfqs/:id/quotation` | Submit / Edit Quote | **403** | **403** | **403** | 200 | 401 |
 
 ---
 
-## 4. Demo Credentials
+## 4. Database Schema & Entities
 
-The database is pre-seeded with 4 distinct user accounts (1 per role) and 25 realistic vendors across all statuses (`ACTIVE`, `PENDING`, `BLOCKED`).
+```mermaid
+erDiagram
+  VENDOR ||--o{ VENDOR_MEMBER : has
+  USER ||--o{ VENDOR_MEMBER : belongs
+  USER ||--o{ RFQ : creates
+  RFQ ||--|{ RFQ_ITEM : contains
+  RFQ ||--o{ RFQ_VENDOR : invites
+  VENDOR ||--o{ RFQ_VENDOR : invited
+  RFQ ||--o{ QUOTATION : receives
+  VENDOR ||--o{ QUOTATION : produces
+  QUOTATION ||--|{ QUOTATION_ITEM : prices
+  RFQ_ITEM ||--o{ QUOTATION_ITEM : priced_by
+  QUOTATION ||--o{ QUOTATION_REVISION : snapshots
+  RFQ |o--o| QUOTATION : selects
+```
 
-| Role | Email Address | Password | Permissions & Scope |
+---
+
+## 5. Seed Demo Accounts & Quick Login
+
+The database includes 4 pre-configured demo user accounts with 1-click login buttons on the login screen (`Password@123` for all):
+
+| Role | Email | Password | Access Capabilities |
 |---|---|---|---|
-| **Admin** | `admin@vendorbridge.local` | `Password@123` | Full system access: vendor create, read, update, delete, audit logs. |
-| **Procurement Officer** | `officer@vendorbridge.local` | `Password@123` | Operational access: create, read, and edit vendors. Cannot delete. |
-| **Manager** | `manager@vendorbridge.local` | `Password@123` | Supervisory read-only: view dashboard, inspect vendors. Cannot create, edit, or delete. |
-| **Vendor** | `vendor@acme.local` | `Password@123` | External partner: restricted from internal vendor registry (returns 403 Forbidden). |
-
-*(For testing admin registration via UI, use Admin Invite Code: `VENDORBRIDGE_ADMIN_SECRET_2026`)*
+| **Admin** | `admin@vendorbridge.local` | `Password@123` | Full ERP permissions, vendor delete, RFQ lifecycle, quotation selection |
+| **Procurement Officer** | `officer@vendorbridge.local` | `Password@123` | Vendor create/update, RFQ create/publish/close/reopen, quotation comparison & selection |
+| **Manager** | `manager@vendorbridge.local` | `Password@123` | View dashboard, vendors, RFQs, and quotation comparison matrices |
+| **Vendor Representative** | `vendor@vendorbridge.local` | `Password@123` | Linked to **Apex Technologies Solutions**; submits quotations, edits bids before deadline |
 
 ---
 
-## 5. Prerequisites & Environment Setup
+## 6. Installation & Running Instructions
 
 ### Prerequisites
-- **Node.js**: v20.x or v22.x+
-- **npm**: v10.x+
-- **PostgreSQL**: v16+ (or Docker Engine)
+- **Node.js**: v20 or higher
+- **PostgreSQL**: v16 or v18 running locally on port `5432`
 
-### 1. Clone the Repository
+### 1. Clone & Configure Environment
 ```bash
-git clone https://github.com/your-username/VendorBridge-X-Kagnus.git
+git clone https://github.com/aadarsh2006ak/VendorBridge-X-Kagnus.git
 cd VendorBridge-X-Kagnus
+
+# Copy environment variables
+cp server/.env.example server/.env
+cp client/.env.example client/.env
 ```
 
-### 2. Environment Variables Configuration
-
-Copy `.env.example` in both `server/` and `client/`:
-
-**Server (`server/.env`):**
-```env
-PORT=4000
-NODE_ENV=development
-CLIENT_URL=http://localhost:5173
-
-# PostgreSQL Connection String
-DATABASE_URL=postgresql://postgres:aadarsh2006@localhost:5432/vendorbridge?schema=public
-
-# Secrets
-JWT_ACCESS_SECRET=super_secret_access_jwt_key_32chars_long_xyz
-JWT_REFRESH_SECRET=super_secret_refresh_jwt_key_32chars_long_abc
-COOKIE_SECRET=super_secret_cookie_signing_key_32chars_long_123
-ADMIN_INVITE_CODE=VENDORBRIDGE_ADMIN_SECRET_2026
-
-# SMTP for Password Reset (Ethereal test credentials)
-SMTP_HOST=smtp.ethereal.email
-SMTP_PORT=587
-SMTP_USER=ethereal_user
-SMTP_PASS=ethereal_pass
-SMTP_FROM="VendorBridge ERP <no-reply@vendorbridge.local>"
-```
-
-**Client (`client/.env`):**
-```env
-VITE_API_BASE_URL=http://localhost:4000/api/v1
-```
-
----
-
-## 6. Database Setup, Migration & Seed
-
-Run from the root or `server/` folder:
-
+### 2. Database Migration & Seed
 ```bash
-# 1. Install dependencies
-npm install
-
-# 2. Apply Prisma schema migration
 cd server
-npx prisma migrate dev --name init
-
-# 3. Seed demo users & 25 vendors
+npm install
+npm run db:migrate
 npm run db:seed
 ```
 
----
+### 3. Start Development Servers
+In two separate terminals:
 
-## 7. Running the Application
-
-### Development Mode (Both Frontend & Backend)
-
-**Terminal 1 — Backend API (Port 4000):**
 ```bash
+# Terminal 1 - Backend API (Port 4000)
 cd server
 npm run dev
-# Starts API with tsx watch on http://localhost:4000
-```
 
-**Terminal 2 — Frontend Client (Port 5173 / 5174):**
-```bash
+# Terminal 2 - Frontend Client (Port 5173)
 cd client
 npm run dev
-# Starts Vite dev server on http://localhost:5173 (or 5174)
 ```
 
-Visit **`http://localhost:5173`** (or `http://localhost:5174`) in your browser.
-
-### Production Build Validation
-```bash
-# Build backend
-cd server && npm run build
-
-# Build frontend
-cd ../client && npm run build
-```
-Both builds compile with **0 errors and 0 warnings**.
+Open **`http://localhost:5173`** in your browser.
 
 ---
 
-## 8. Automated Testing
+## 7. Automated Testing
 
-Run the automated integration test suite from `server/`:
+Run the Vitest test suite from `server/`:
 
 ```bash
 cd server
@@ -224,108 +202,62 @@ npm test
 
 ### Test Results Summary:
 ```
+ ✓ src/modules/quotations/__tests__/quotation.calculator.test.ts (2 tests)
  ✓ src/modules/vendors/__tests__/vendor-features.test.ts (7 tests)
- ✓ src/modules/vendors/__tests__/vendor-rbac-matrix.test.ts (25 tests)
  ✓ src/modules/auth/__tests__/auth.test.ts (14 tests)
+ ✓ src/modules/vendors/__tests__/vendor-rbac-matrix.test.ts (25 tests)
 
- Test Files  3 passed (3)
-      Tests  46 passed (46)
-   Duration  3.83s
+ Test Files  4 passed (4)
+      Tests  48 passed (48)
 ```
-
-All 46 integration tests pass, including:
-- **14 Auth tests**: registration, argon2 password hashing, session cookies, JWT token rotation, reuse breach revocation, rate limiting.
-- **25 RBAC Matrix tests**: every role (`Admin`, `Officer`, `Manager`, `Vendor`, `Anonymous`) tested against all vendor endpoints with exact 200/201/403/401 status checks.
-- **7 Vendor Feature tests**: search by name & GSTIN, category filtering, pagination metadata, status chip counts preservation, and soft deletion.
 
 ---
 
-## 9. Demonstrable Evidence & Screenshots
+## 8. Demonstrable Evidence & Screenshots
 
-> 📺 **Demonstration Video Walkthrough:** [Watch Video Demonstration on LinkedIn](https://lnkd.in/p/dVGWVpez)  
 > 📁 **Screenshot Repository Gallery:** [`docs/screenshots/`](docs/screenshots/)
 
-All high-resolution demonstration screenshots are stored in [`docs/screenshots/`](docs/screenshots/):
-
-| Screenshot | Description | Preview |
-|---|---|:---:|
-| **01 - Login Screen** | Sleek dark theme with brand mark, validation, and 1-click demo accounts | <img src="docs/screenshots/01-login.png" width="280" alt="Login Screen" /> |
-| **02 - Dashboard Shell** | Real greeting, 4 live database StatCards, PO & Spend empty states | <img src="docs/screenshots/02-dashboard.png" width="280" alt="Dashboard Screen" /> |
-| **03 - Vendor Management** | Full 6-column data table, search bar, category filter, status chips | <img src="docs/screenshots/03-vendors-list.png" width="280" alt="Vendors Table" /> |
-| **04 - Add Vendor Modal** | Zod-validated modal form with Indian GSTIN and phone validation | <img src="docs/screenshots/04-add-vendor-modal.png" width="280" alt="Add Vendor Modal" /> |
-| **05 - Filtered Vendors** | Instant filtering by "Pending" status chip with updated count chips | <img src="docs/screenshots/05-vendors-filtered.png" width="280" alt="Filtered Vendors" /> |
-| **06 - Created Vendor** | New vendor created and persisted in PostgreSQL database | <img src="docs/screenshots/06-vendor-created.png" width="280" alt="Created Vendor" /> |
-
----
-
-## 10. Repository Structure
-
-```
-VendorBridge-X-Kagnus/
-├── docker-compose.yml          # PostgreSQL 16 container definition
-├── LICENSE                     # MIT License
-├── README.md                   # Complete documentation and setup guide
-├── package.json                # Root package with unified workspace scripts
-├── docs/                       # Canonical specifications & reports
-│   ├── prd.md                  # Product Requirements Document
-│   ├── architecture.md         # Technical architecture & data models
-│   ├── rules.md                # Golden engineering rules
-│   ├── design.md               # Design specification & color tokens
-│   ├── tasks.md                # 10-phase milestone task plan
-│   ├── memory.md               # Architecture decision log & running state
-│   ├── completion-report.md    # Week 1 Completion & Acceptance Report
-│   └── screenshots/            # Demonstration screenshots
-├── client/                     # Frontend SPA (React 18 + Vite + TS + Tailwind)
-│   ├── src/
-│   │   ├── components/         # UI kit (Modal, Drawer, StatCard, Badge, etc.)
-│   │   ├── context/            # AuthContext & session management
-│   │   ├── lib/                # Axios instance, queryClient, helpers
-│   │   ├── pages/              # Auth, Dashboard, Vendors, & ComingSoon views
-│   │   └── App.tsx             # Route definitions with role guards
-│   ├── tailwind.config.js      # Custom dark theme color tokens
-│   └── package.json
-└── server/                     # Backend API (Express + TypeScript + Prisma)
-    ├── prisma/
-    │   ├── schema.prisma       # User, Session, Vendor, AuditLog models
-    │   └── seed.ts             # 4 demo users + 25 realistic vendors
-    ├── src/
-    │   ├── modules/
-    │   │   ├── auth/           # Login, register, refresh, reset + tests
-    │   │   ├── vendors/        # CRUD, search, filter + RBAC matrix tests
-    │   │   ├── dashboard/      # Dashboard summary endpoint
-    │   │   └── audit/          # Write-only forensic audit log service
-    │   ├── middleware/         # Auth, RBAC authorize, validation, CSRF, rate-limit
-    │   ├── lib/                # Prisma client, argon2, tokens, errors
-    │   ├── app.ts              # Express configuration & routes
-    │   └── server.ts           # Server bootstrap
-    └── package.json
-```
+| # | Screenshot | Screen / Workflow | Preview |
+|---|---|---|:---:|
+| 01 | `01-login.png` | Dark login screen with 1-click demo accounts | <img src="docs/screenshots/01-login.png" width="260" /> |
+| 02 | `02-dashboard.png` | Role-aware dashboard with live database stats | <img src="docs/screenshots/02-dashboard.png" width="260" /> |
+| 03 | `03-vendors-list.png` | Screen 4: Complete vendor table with search and filters | <img src="docs/screenshots/03-vendors-list.png" width="260" /> |
+| 04 | `04-add-vendor-modal.png` | Add vendor modal form with GSTIN validation | <img src="docs/screenshots/04-add-vendor-modal.png" width="260" /> |
+| 05 | `05-vendors-filtered.png` | Filtered vendor list with dynamic count chips | <img src="docs/screenshots/05-vendors-filtered.png" width="260" /> |
+| 06 | `06-vendor-created.png` | Newly created vendor persisted in database | <img src="docs/screenshots/06-vendor-created.png" width="260" /> |
+| 07 | `07-rfqs-list.png` | RFQ listing table with status filter tabs & count chips | <img src="docs/screenshots/07-rfqs-list.png" width="260" /> |
+| 08 | `08-create-rfq-general-items.png` | Screen 5: RFQ creation (Section 1 Details & Section 2 Items) | <img src="docs/screenshots/08-create-rfq-general-items.png" width="260" /> |
+| 09 | `09-create-rfq-vendor-assignment.png` | Screen 5: RFQ creation (Section 3 Vendor Assignment) | <img src="docs/screenshots/09-create-rfq-vendor-assignment.png" width="260" /> |
+| 10 | `10-rfq-details-view.png` | RFQ details view with line items & vendor invitation status | <img src="docs/screenshots/10-rfq-details-view.png" width="260" /> |
+| 11 | `11-vendor-portal-rfqs.png` | Vendor Portal assigned RFQs & submission deadlines | <img src="docs/screenshots/11-vendor-portal-rfqs.png" width="260" /> |
+| 12 | `12-vendor-quote-submission.png` | Screen 6: Vendor quotation pricing workspace | <img src="docs/screenshots/12-vendor-quote-submission.png" width="260" /> |
+| 13 | `13-vendor-quote-calculations.png` | Screen 6: Live calculations (Subtotal, GST, Grand Total) | <img src="docs/screenshots/13-vendor-quote-calculations.png" width="260" /> |
+| 14 | `14-quotation-comparison-matrix.png` | Screen 7: Quotation Comparison Matrix & Lowest Price (L1) | <img src="docs/screenshots/14-quotation-comparison-matrix.png" width="260" /> |
 
 ---
 
-## 11. Milestone Acceptance Checklist
+## 9. Milestone Acceptance Checklist
 
-- [x] **Deliverable 1: Authentication**
-  - [x] User can register with role validation (Admin invite code required for Admin).
-  - [x] User can log in with email/password; receives `httpOnly` secure cookies.
-  - [x] Session refresh with rotation and breach detection.
-  - [x] User can log out; cookies cleared and session deleted in PostgreSQL.
-  - [x] Protected routes redirect unauthenticated users to `/login`.
-  - [x] Unauthorized roles blocked on backend (`403 Forbidden` verified via 25-cell test matrix).
-- [x] **Deliverable 2: Dashboard**
-  - [x] Matches 11-screen Excalidraw design reference (dark theme, green active nav).
-  - [x] 4 StatCards with live counts from database.
-  - [x] Navigation with all 11 modules.
-  - [x] Quick actions ("+ Add Vendor", "View Vendors").
-  - [x] Honest empty states for future modules (Purchase Orders, Spending Analytics).
-- [x] **Deliverable 3: Vendor Management**
-  - [x] Create vendor with 15-char Indian GSTIN and phone validation.
-  - [x] View vendor side drawer with complete metadata.
-  - [x] Update vendor modal with prefilled data.
-  - [x] Soft-delete vendor (Admin only, confirmation dialog).
-  - [x] Case-insensitive search across name and GSTIN.
-  - [x] Status filter chips with live counts + Category dropdown filter.
-  - [x] Data persists in PostgreSQL after page refresh and server restart.
+- [x] **Week 1 Foundation**
+  - [x] Secure authentication with argon2id, JWT rotation, and httpOnly cookies.
+  - [x] Role-Based Access Control matrix verified by 25 automated tests.
+  - [x] Complete vendor management CRUD with Indian GSTIN validation.
+- [x] **Week 2: RFQ Lifecycle (Screen 5)**
+  - [x] Concurrency-safe sequence generator `RFQ-YYYY-NNNN`.
+  - [x] 3-step section layout: General Details, Items & Quantities, Vendor Assignment.
+  - [x] Save as Draft & direct Publish actions.
+  - [x] Optimistic concurrency control using `version`.
+  - [x] State transitions (Draft, Open, Closed, Quotation Selected, Cancelled).
+- [x] **Week 2: Vendor Portal (Screen 6)**
+  - [x] Vendor-safe assigned RFQ view (`404` for unassigned RFQs).
+  - [x] Live decimal calculations (Subtotal, GST, Grand Total).
+  - [x] Strict deadline enforcement (auto-locks after deadline).
+  - [x] Revisions snapshot tracking on quote modification.
+- [x] **Week 2: Quotation Comparison (Screen 7)**
+  - [x] Side-by-side vendor quotation comparison matrix.
+  - [x] Green lowest price (L1) badge & highlight.
+  - [x] Multi-parameter sorting and filtering.
+  - [x] Winning quotation selection with RFQ status transition.
 
 ---
 

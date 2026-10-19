@@ -10,6 +10,15 @@ async function main() {
   await prisma.auditLog.deleteMany();
   await prisma.session.deleteMany();
   await prisma.passwordResetToken.deleteMany();
+  await prisma.quotationRevision.deleteMany();
+  await prisma.quotationItem.deleteMany();
+  await prisma.quotation.deleteMany();
+  await prisma.rfqAttachment.deleteMany();
+  await prisma.rfqVendor.deleteMany();
+  await prisma.rfqItem.deleteMany();
+  await prisma.rfq.deleteMany();
+  await prisma.vendorMember.deleteMany();
+  await prisma.counter.deleteMany();
   await prisma.vendor.deleteMany();
   await prisma.user.deleteMany();
 
@@ -363,6 +372,299 @@ async function main() {
   }
 
   console.log(`✅ Seeded ${sampleVendors.length} vendors across all statuses and categories.`);
+
+  // 3. Link Vendor User to Apex Technologies Solutions
+  const apexVendor = await prisma.vendor.findFirst({
+    where: { name: 'Apex Technologies Solutions' },
+  });
+
+  if (apexVendor) {
+    await prisma.vendorMember.create({
+      data: {
+        userId: vendorUser.id,
+        vendorId: apexVendor.id,
+      },
+    });
+    console.log(`✅ Linked vendor demo user (${vendorUser.email}) to ${apexVendor.name}`);
+  }
+
+  // Set ratings for sample active vendors
+  await prisma.vendor.updateMany({
+    where: { category: 'IT Hardware', status: VendorStatus.ACTIVE },
+    data: { rating: 4.8 },
+  });
+  await prisma.vendor.updateMany({
+    where: { category: 'Furniture', status: VendorStatus.ACTIVE },
+    data: { rating: 4.5 },
+  });
+  await prisma.vendor.updateMany({
+    where: { category: 'Construction', status: VendorStatus.ACTIVE },
+    data: { rating: 4.2 },
+  });
+
+  // Seed Counter for 2026 sequences
+  await prisma.counter.create({
+    data: {
+      key: 'rfq:2026',
+      value: 3,
+    },
+  });
+
+  const blueStarVendor = await prisma.vendor.findFirst({
+    where: { name: 'BlueStar Office Comforts' },
+  });
+  const pinnacleVendor = await prisma.vendor.findFirst({
+    where: { name: 'Pinnacle Facilities & Maintenance' },
+  });
+  const omniNetVendor = await prisma.vendor.findFirst({
+    where: { name: 'OmniNet Telecom Infrastructure' },
+  });
+
+  // 4. Seed RFQ 1: OPEN (IT Hardware)
+  const rfq1 = await prisma.rfq.create({
+    data: {
+      code: 'RFQ-2026-0001',
+      title: 'Q2 Enterprise Laptops & Workstations Deployment',
+      category: 'IT Hardware',
+      description: 'Annual corporate hardware refresh cycle for engineering and product teams.',
+      deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days future
+      status: 'OPEN',
+      publishedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      createdById: officerUser.id,
+      items: {
+        create: [
+          {
+            position: 1,
+            name: 'ThinkPad T14 Gen 4 Core i7 32GB RAM',
+            description: '14" WUXGA, Intel Core i7-1355U, 32GB DDR5, 1TB NVMe PCIe 4.0 SSD',
+            quantity: 25,
+            unit: 'Units',
+          },
+          {
+            position: 2,
+            name: 'Dell UltraSharp 27" 4K USB-C Hub Monitor (U2723QE)',
+            description: 'IPS Black technology, 98% DCI-P3, 90W USB-C Power Delivery, RJ45 LAN',
+            quantity: 50,
+            unit: 'Units',
+          },
+          {
+            position: 3,
+            name: 'Thunderbolt 4 Universal Docking Station',
+            description: 'Dual 4K display support, 100W PD passthrough, Gigabit Ethernet',
+            quantity: 25,
+            unit: 'Units',
+          },
+        ],
+      },
+    },
+    include: { items: true },
+  });
+
+  if (apexVendor) {
+    await prisma.rfqVendor.create({
+      data: {
+        rfqId: rfq1.id,
+        vendorId: apexVendor.id,
+        viewedAt: new Date(),
+      },
+    });
+
+    // Seed Apex quotation
+    const quote1 = await prisma.quotation.create({
+      data: {
+        rfqId: rfq1.id,
+        vendorId: apexVendor.id,
+        status: 'SUBMITTED',
+        taxRate: 18,
+        subtotal: 3825000,
+        taxAmount: 688500,
+        grandTotal: 4513500,
+        deliveryDays: 10,
+        paymentTermsDays: 30,
+        notes: 'Price includes 3-year onsite OEM manufacturer warranty and immediate courier dispatch.',
+        submittedAt: new Date(),
+        items: {
+          create: [
+            {
+              rfqItemId: rfq1.items[0].id,
+              unitPrice: 85000,
+              deliveryDays: 10,
+              lineTotal: 2125000,
+            },
+            {
+              rfqItemId: rfq1.items[1].id,
+              unitPrice: 28000,
+              deliveryDays: 7,
+              lineTotal: 1400000,
+            },
+            {
+              rfqItemId: rfq1.items[2].id,
+              unitPrice: 12000,
+              deliveryDays: 5,
+              lineTotal: 300000,
+            },
+          ],
+        },
+      },
+    });
+
+    await prisma.quotationRevision.create({
+      data: {
+        quotationId: quote1.id,
+        revision: 1,
+        snapshot: {
+          version: 1,
+          status: 'SUBMITTED',
+          subtotal: '3825000',
+          grandTotal: '4513500',
+        },
+      },
+    });
+  }
+
+  if (omniNetVendor) {
+    await prisma.rfqVendor.create({
+      data: {
+        rfqId: rfq1.id,
+        vendorId: omniNetVendor.id,
+      },
+    });
+  }
+
+  // 5. Seed RFQ 2: CLOSED with 2 competitive quotations for Comparison (Screen 7)
+  if (blueStarVendor && pinnacleVendor) {
+    const rfq2 = await prisma.rfq.create({
+      data: {
+        code: 'RFQ-2026-0002',
+        title: 'Corporate Headquarters Ergonomic Workstations & Chairs',
+        category: 'Furniture',
+        description: 'Floors 3 & 4 executive office fit-out package.',
+        deadline: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago (Closed)
+        status: 'CLOSED',
+        publishedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+        closedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+        createdById: officerUser.id,
+        items: {
+          create: [
+            {
+              position: 1,
+              name: 'Ergonomic Breathable Mesh High-Back Task Chairs',
+              description: 'Adjustable lumbar support, 3D armrests, synchronized tilt mechanism',
+              quantity: 40,
+              unit: 'Units',
+            },
+            {
+              position: 2,
+              name: 'Motorized Dual-Motor Height Adjustable Standing Desks',
+              description: '140x70cm oak veneer top, memory keypad with collision avoidance',
+              quantity: 40,
+              unit: 'Units',
+            },
+          ],
+        },
+      },
+      include: { items: true },
+    });
+
+    await prisma.rfqVendor.createMany({
+      data: [
+        { rfqId: rfq2.id, vendorId: blueStarVendor.id, viewedAt: new Date() },
+        { rfqId: rfq2.id, vendorId: pinnacleVendor.id, viewedAt: new Date() },
+      ],
+    });
+
+    // Quote A: BlueStar (Lowest Price: 1,746,400)
+    await prisma.quotation.create({
+      data: {
+        rfqId: rfq2.id,
+        vendorId: blueStarVendor.id,
+        status: 'SUBMITTED',
+        taxRate: 18,
+        subtotal: 1480000,
+        taxAmount: 266400,
+        grandTotal: 1746400,
+        deliveryDays: 14,
+        paymentTermsDays: 45,
+        notes: 'Includes professional white-glove floor assembly and packaging removal.',
+        submittedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+        items: {
+          create: [
+            {
+              rfqItemId: rfq2.items[0].id,
+              unitPrice: 12000,
+              deliveryDays: 10,
+              lineTotal: 480000,
+            },
+            {
+              rfqItemId: rfq2.items[1].id,
+              unitPrice: 25000,
+              deliveryDays: 14,
+              lineTotal: 1000000,
+            },
+          ],
+        },
+      },
+    });
+
+    // Quote B: Pinnacle Facilities (Higher Price: 1,935,200)
+    await prisma.quotation.create({
+      data: {
+        rfqId: rfq2.id,
+        vendorId: pinnacleVendor.id,
+        status: 'SUBMITTED',
+        taxRate: 18,
+        subtotal: 1640000,
+        taxAmount: 295200,
+        grandTotal: 1935200,
+        deliveryDays: 10,
+        paymentTermsDays: 30,
+        notes: 'BIFMA certified seating with 5-year commercial warranty.',
+        submittedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+        items: {
+          create: [
+            {
+              rfqItemId: rfq2.items[0].id,
+              unitPrice: 14000,
+              deliveryDays: 8,
+              lineTotal: 560000,
+            },
+            {
+              rfqItemId: rfq2.items[1].id,
+              unitPrice: 27000,
+              deliveryDays: 10,
+              lineTotal: 1080000,
+            },
+          ],
+        },
+      },
+    });
+  }
+
+  // 6. Seed RFQ 3: DRAFT (IT Services) for Create RFQ / edit test
+  await prisma.rfq.create({
+    data: {
+      code: 'RFQ-2026-0003',
+      title: 'Enterprise Cloud Disaster Recovery & Backup Solution',
+      category: 'IT Services',
+      description: 'Automated offsite backup, replication, and failover support SLA.',
+      deadline: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
+      status: 'DRAFT',
+      createdById: officerUser.id,
+      items: {
+        create: [
+          {
+            position: 1,
+            name: 'Managed Multi-Cloud Backup Infrastructure',
+            description: 'Daily encrypted incremental backup with 15-minute RPO and 2-hour RTO',
+            quantity: 12,
+            unit: 'Months',
+          },
+        ],
+      },
+    },
+  });
+
+  console.log('✅ Seeded 3 Week-2 RFQs with items, vendor invitations, and submitted quotations!');
   console.log('🎉 Database seed completed successfully!');
 }
 

@@ -47,6 +47,7 @@ export const createVendorSchema = z
       .regex(phoneRegex, 'Invalid phone number (minimum 10 digits)'),
     address: z.string().trim().max(300, 'Address cannot exceed 300 characters').optional().nullable(),
     notes: z.string().trim().max(500, 'Notes cannot exceed 500 characters').optional().nullable(),
+    rating: z.coerce.number().min(0, 'Rating cannot be less than 0').max(5, 'Rating cannot exceed 5').optional().nullable(),
     status: z.nativeEnum(VendorStatus).default(VendorStatus.PENDING),
   })
   .strict();

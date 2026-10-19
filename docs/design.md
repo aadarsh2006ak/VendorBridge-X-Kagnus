@@ -1,209 +1,202 @@
-# VendorBridge — Design Specification (Week 1)
+# VendorBridge — Design Specification (Week 2)
 
-Source of truth: the VendorBridge Excalidraw mockup. This document translates the wireframes (Screens 1–4 in scope, 5–11 as nav/placeholder context) into implementable UI. Do not remove specified features or restructure layouts without approval.
+Source of truth: Excalidraw mockup **Screen 5 (Create RFQ's)**, **Screen 6 (Submit Quotations)**, **Screen 7 (Quotation Comparison)**. Week 1 design tokens, app shell, typography, and component rules (`design.md` Week 1) are unchanged. This document specifies only what Week 2 adds. Where the mockup is silent, the choice is marked **(extension)** and listed in `prd.md` §8 for approval.
 
-## 1. Visual Language
+## 1. Reused from Week 1
+Dark canvas, green brand accent, thin outlined surfaces, Inter font, 4px grid, `AppShell` (topbar + role-aware sidebar), `Button`, `Input`, `Select`, `Textarea`, `Card/StatCard`, `StatusBadge`, `DataTable`, `FilterChips`, `SearchInput`, `Modal`, `Drawer`, `ConfirmDialog`, `Toast`, `EmptyState`, skeletons, accessibility rules. Sidebar items **RFQ's** and **Quotations** switch from "Coming soon" to live pages.
 
-The mockup uses a **dark theme with green accents**: near-black canvas, thin light-gray outlines, and a solid green highlight on the active sidebar item.
+## 2. New Design Tokens and Status Colors
 
-### Design tokens (Tailwind theme extension)
-
-| Token | Value | Use |
+| Use | Token | Notes |
 |---|---|---|
-| `bg-canvas` | `#0B0D0C` | Page background |
-| `bg-surface` | `#121614` | Cards, panels, sidebar |
-| `bg-surface-2` | `#1A1F1C` | Inputs, table header, hover |
-| `border-default` | `#2E3532` | Outlines (mockup's thin gray borders) |
-| `text-primary` | `#F4F6F5` | Headings, body |
-| `text-secondary` | `#9AA5A0` | Subtitles, helper text |
-| `text-muted` | `#6B7671` | Placeholders |
-| `brand` | `#15803D` | Active nav, primary buttons (mockup green) |
-| `brand-hover` | `#16A34A` | Hover/focus |
-| `brand-subtle` | `#052E16` | Tinted backgrounds |
-| `success` | `#22C55E` | Active status |
-| `warning` | `#F59E0B` | Pending status |
-| `danger` | `#EF4444` | Blocked status, destructive actions |
-| `info` | `#3B82F6` | Info, links, step highlight |
+| Lowest-price column background | `brand` `#15803D` at 90% (mockup solid green) | White text; plus **"Lowest" text badge** (never color-only) |
+| Lowest column border | `success` `#22C55E` | |
+| Draft | `text-secondary` gray | RFQ & quotation |
+| Open | `info` `#3B82F6` | RFQ |
+| Closed | `warning` `#F59E0B` | RFQ |
+| Quotation Selected | `success` `#22C55E` | RFQ |
+| Cancelled | `danger` `#EF4444` | RFQ |
+| Invited / Viewed / Quoted | gray / info / success | Vendor assignment state |
+| Deadline soon (< 48h) | `warning` | Countdown text |
+| Deadline passed | `danger` | |
 
-Contrast: all text/background pairs must meet WCAG AA (4.5:1 body, 3:1 large text).
+**Status label spec** (badge = dot + text): `Draft`, `Open`, `Closed`, `Quotation selected`, `Cancelled`; quotation: `Draft`, `Submitted`; per-vendor: `Invited`, `Viewed`, `Quoted`.
 
-### Typography
-- Font: **Inter** (fallback system-ui). The mockup's hand-drawn font is an Excalidraw artifact, not a requirement.
-- Scale: Page title 24/32 semibold · Section title 18/28 semibold · Body 14/20 · Caption 12/16 · Card number 28/32 bold.
+## 3. New Components
 
-### Spacing, shape, elevation
-- 4px base grid (4, 8, 12, 16, 24, 32).
-- Radius: inputs/buttons 8px, cards 12px, modals 16px.
-- Borders over shadows (matches wireframe); subtle shadow only on modals/drawers.
-- Focus ring: 2px `brand-hover` with 2px offset.
-
-## 2. Layout System
-
-### App shell (Screens 3–11)
-```
-┌──────────────────────────────────────────────────────────┐
-│ Topbar: "VendorBridge" brand ........ user menu (○)      │
-├───────────────┬──────────────────────────────────────────┤
-│ Sidebar       │ Page header (title + subtitle)  [Action] │
-│  - Dashboard  │──────────────────────────────────────────│
-│  - Vendors    │ Page content                             │
-│  - RFQ's      │                                          │
-│  - Quotations │                                          │
-│  - Approvals  │                                          │
-│  - Purchase.. │                                          │
-│  - Invoices   │                                          │
-│  - Reports    │                                          │
-│  - Activity   │                                          │
-└───────────────┴──────────────────────────────────────────┘
-```
-- Topbar: brand left; circle at far right in the mockup becomes the **user avatar menu** (name, role, Logout).
-- Sidebar width 240px; item list in mockup order; active item has solid `brand` background and white text. Items hidden per role (architecture §8).
-- Content max-width 1280px, 24–32px padding.
-
-### Responsive behavior
-| Breakpoint | Behavior |
+| Component | Purpose / behavior |
 |---|---|
-| ≥ 1024px | Sidebar fixed, full layout |
-| 768–1023px | Sidebar collapses to icon rail or drawer; cards 2 columns |
-| < 768px | Hamburger opens sidebar drawer; cards 1 column; tables become horizontally scrollable or stacked cards |
+| `Stepper` | 3 numbered circles with connecting line (Screen 5). States: active (filled blue per mockup), complete (check), upcoming (outline). `aria-current="step"`. |
+| `LineItemsEditor` | Table (Item, Qty, Unit) with `+ add line item`, per-row remove; keyboard: Enter adds a row. Backed by `useFieldArray`. Max 50. |
+| `VendorPicker` | Async combobox (searches **Active** vendors, debounced) + selected **chips with ×**; "+ add vendor" opens the combobox. Max 20; shows "Pending/Blocked vendors can't be invited" helper. |
+| `FileDropzone` | Dashed box "Drag & drop files or click to upload"; keyboard-focusable; per-file progress, remove, error (type/size). Lists existing attachments with download. |
+| `DateTimePicker` | Date field (e.g. "15 June 2025") + time (default 23:59), displayed in local time with timezone label. |
+| `MoneyInput` | Right-aligned, ₹ prefix, 2 decimals, Indian grouping on blur; value kept as string. |
+| `DeadlineBadge` | "Closes in 3 days", "Closes today 23:59", "Closed 12 Jun". |
+| `RfqSummaryBox` | Bordered box with RFQ title line items summary (Screen 6 "RFQ Summary"). |
+| `QuoteTotalsPanel` | Subtotal, GST (n%), Grand total (Screen 6 right-bottom panel). |
+| `ComparisonTable` | Transposed table (criteria rows × vendor columns), sticky first column, lowest highlight. |
+| `RatingIndicator` | `4.5/5` with star glyph; "Not rated" when null. |
+| `ComparisonToolbar` | Sort select + filter controls + reset. |
+| `UnsavedChangesGuard` | Warns before leaving a dirty form. |
 
-## 3. Screens in Scope
+## 4. Screens
 
-### Screen 1 — Login
-Centered card on `bg-canvas` (max-width 400px).
-- Top: brand mark (replaces "Photo" placeholder), title "Sign in".
-- Fields: **Email** (mockup says Username; see PRD deviation #1), **Password** (show/hide toggle).
-- Primary button: **Login** full width.
-- Links: "Forgot password?" and "Create an account".
-- States: field errors inline, form-level error banner for invalid credentials, button loading spinner, disabled while submitting.
+### 4.1 Screen 5 — Create RFQ (`/rfqs/new`)
 
-### Screen 2 — Registration
-Centered card (max-width 640px), two-column grid on desktop, one column on mobile.
+Header: **"Create RFQ's"**, subtitle **"new request for quotation"**. Below: Stepper `1 — 2 — 3`.
 
-| Row | Left | Right |
-|---|---|---|
-| 1 | First Name | Last Name |
-| 2 | Email Address | Phone Number |
-| 3 | Role (select: Admin, Procurement Officer, Manager/Approver, Vendor) | Country |
-| 4 | Password | Confirm Password *(added)* |
-| 5 | Additional Information (textarea, full width, optional) | |
-| 6 | Invite code (appears only when Admin is selected) *(added)* | |
+**Desktop layout (matches wireframe): two columns + footer row**
 
-- Footer: **Register** button centered; link "Already have an account? Login".
-- Password helper text lists the policy; inline strength hint.
-- Success: redirect to login with success toast (or auto-login, decided in `memory.md`).
+| Left column (Step 1 · Details) | Right column (Step 2 · Items & Vendors) |
+|---|---|
+| **RFQ's title*** (text, e.g. "Office Furniture procurement Q2") | **Line Items** table: Item · Qty · Unit |
+| **Category** (select) | `+ add line item` |
+| **Deadline*** (date + time) | **ASSIGN VENDORS** chips (× to remove) |
+| **Description** (textarea) | `+ add vendor` |
 
-### Forgot / Reset password (added, minimal)
-Same card style as login. Forgot: email field + "Send reset link" + generic success message. Reset: new password + confirm, with invalid/expired token error state.
+| Footer (Step 3 · Attachments & Send) | |
+|---|---|
+| Buttons (left): **Save & Send to Vendors** (primary), **Save as Draft** (outline) | **Attachments**: dashed dropzone "Drag & drop files or click to upload" (right) |
 
-### Screen 3 — Dashboard
-Header: **"Dashboard"**; subtitle **"Welcome back, {Role label}, Today's Overview"** (e.g., "Welcome back, Procurement Officer").
+Behavior
+- Stepper highlights the section in view/focus and marks sections complete when valid; clicking a step scrolls to it. On < 768px the sections render as one step at a time with Back/Next, and the same two final buttons on step 3.
+- **Save & Send** disabled until: title, deadline (future), ≥1 line item with name+qty+unit, ≥1 vendor. Disabled-reason tooltip lists what's missing. Confirms with a dialog: "Send to 3 vendors? Line items can't be changed after sending."
+- **Save as Draft** requires only a title.
+- Attachments upload after the RFQ id exists: on first save the RFQ is created, then files upload with progress; failures show retry without losing the RFQ.
+- Errors: field-level (from API `details`), banner for non-field errors; focus moves to the first invalid field.
+- Edit mode (`/rfqs/:id/edit`) reuses the form: Draft = all fields editable; Open = only deadline (extend), description, add vendors/attachments enabled; others read-only with explanatory helper text.
 
-**Summary cards (row of 4)**
+### 4.2 RFQ List (`/rfqs`) — **(extension; Vendors page pattern)**
 
-| Card | Mockup sample | Week 1 value | Helper |
-|---|---|---|---|
-| Active RFQ's | 12 | 0 | "RFQs arrive in Week 2" |
-| Pending Approvals | 5 | 0 | "Approvals arrive in Week 3" |
-| PO's this month | ₹2.3L | ₹0 | "Purchase orders arrive in Week 4" |
-| Overdue invoices | 3 | 0 | "Invoices arrive in Week 4" |
-
-Card: bordered surface, large number on top, label beneath, optional small helper text. Numbers formatted in INR (₹, lakh notation allowed).
-
-**Content row (two panels)**
-- **Recent Purchase Orders** (left, wider): table columns PO#, Vendor, Amount, Status. Empty state: icon + "No purchase orders yet" + helper text.
-- **Spending Trends — last 6 months** (right): chart panel. Empty state: "Spending data will appear once purchase orders exist."
-
-**Quick actions (bottom row of 3 outlined buttons)**
-- `+ New RFQ` → disabled with tooltip "Coming in Week 2"
-- `Add Vendor` → opens Add Vendor form (hidden/disabled for roles without `vendor:create`)
-- `View Invoices` → navigates to the Invoices coming-soon page
-
-### Screen 4 — Vendors
-Header: **"Vendors"**, subtitle **"Manage supplier profiles and registrations"**, top-right **"+ Add Vendor"** button (only for Admin/Officer).
-
-1. **Search bar** (full width): placeholder "Search by name, GST number, category…" — debounced 300ms, synced to URL.
-2. **Filter chips** with counts: `All (29)`, `Active (21)`, `Pending (4)`, `Blocked (3)`. Selected chip uses `brand` tint. Optional category select next to chips.
-3. **Table**
+Header **"RFQ's"**, subtitle "Manage requests for quotation", top-right **"+ Create RFQ"** (Admin/Officer).
+Search "Search by RFQ ID or title…". Chips: `All (n)`, `Draft`, `Open`, `Closed`, `Selected`, `Cancelled` with counts.
 
 | Column | Content |
 |---|---|
-| Vendor Name | Name (truncate with tooltip) |
-| Category | Text |
-| GST No. | Monospace |
-| Contact No. | Phone |
-| Status | Badge |
-| Action | `View` button; kebab menu with Edit, Delete (role-dependent) |
+| RFQ ID | `RFQ-2026-0001` (mono) |
+| Title | truncate + tooltip |
+| Category | text |
+| Deadline | date + `DeadlineBadge` |
+| Vendors | `quoted / assigned`, e.g. `2 / 3` |
+| Status | `StatusBadge` |
+| Action | `View`; kebab: Edit (draft), Compare (if ≥1 quote), Close, Cancel, Delete (draft) per state/role |
 
-4. **Pagination** footer: "Showing 1–10 of 29", prev/next, page size select.
-5. **View vendor** → right-side drawer with all details (name, category, GST, contact person/email/phone, address, notes, status, created by/at, updated at) and Edit button.
-6. **Add / Edit vendor** → modal form:
+Pagination, URL-synced filters, loading skeleton, empty ("No RFQs yet" + Create RFQ), no-results, error with Retry. Managers see no mutating actions.
 
-| Field | Type | Required | Validation |
-|---|---|:-:|---|
-| Vendor name | text | ✅ | 2–120 chars |
-| Category | select | ✅ | from category list |
-| GST number | text (auto-uppercase) | ✅ | 15-char GSTIN regex; unique |
-| Contact person | text | ✅ | 2–80 chars |
-| Contact email | email | ✅ | valid email |
-| Contact phone | tel | ✅ | 10-digit or E.164 |
-| Address | textarea | ❌ | ≤ 300 chars |
-| Notes | textarea | ❌ | ≤ 500 chars |
-| Status | select | ✅ | Active / Pending / Blocked (default Pending) |
+### 4.3 RFQ Detail (`/rfqs/:id`) — **(extension)**
 
-7. **Delete** → confirmation dialog naming the vendor; Admin only.
+- Header: RFQ ID, title, status badge, `DeadlineBadge`, created by/at.
+- Action bar by state: Edit · Publish · Close · Reopen (new deadline dialog) · Cancel (reason dialog) · **Compare quotations** (primary, when ≥1 submitted quote) · Delete (draft).
+- Sections: **Requirements** (category, description), **Line items** table, **Attachments** list (download), **Vendors** table (Vendor, rating, status Invited/Viewed/Quoted, submitted at, grand total if quoted, "Vendor blocked" flag), **Selection** card when a quotation is selected (vendor, total, selected by/at).
+- Remove-vendor button disabled with tooltip when that vendor has a submitted quote (BR-15).
 
-## 4. Placeholder Screens (Screens 5–11)
+### 4.4 Quotations hub (`/quotations`)
 
-Navigation items for RFQ's, Quotations, Approvals, Purchase orders, Invoices, Reports, Activity render a shared `ComingSoon` page: page title (matching sidebar label), icon, "This module arrives in Week N", and a "Back to dashboard" button. Do not draw the real screens' content.
+- **Vendor:** header "Submit Quotations", list of assigned RFQs: RFQ ID, Title, Deadline (+badge), Status (`Awaiting quotation` / `Draft saved` / `Submitted` / `Closed`), Action (`Quote` / `Edit` / `View`). Unlinked vendor account → empty state: "Your account isn't linked to a vendor yet. Ask your procurement contact to link it."
+- **Staff:** list of RFQs that have received quotations: RFQ ID, Title, Quotes received, Lowest total, Deadline, Action `Compare` **(extension; thin entry point to Screen 7)**.
 
-Reference for later weeks (do not build now): RFQ 3-step wizard (5), quotation entry (6), comparison table with green lowest-price column (7), 4-step approval chain (8), PO/invoice document (9), audit timeline with immutable entries (10), spend analytics (11).
+### 4.5 Screen 6 — Submit Quotations (`/quotations/rfq/:rfqId`, Vendor)
 
-## 5. Component Library
+Header: **"Submit Quotations"**; subtitle **"RFQ: {title} - deadline {date}"** (+ `DeadlineBadge`).
 
-| Component | Variants / notes |
+1. **RFQ Summary** box: "RFQ Summary — {Item} × {qty}, … — category {category}". "View details & attachments" link opens a drawer (requirements, attachments).
+2. **Your Quotation** table: **Item · Qty · Unit price · Total · Delivery (days)**
+   - Item and Qty are read-only (from RFQ). Unit price = `MoneyInput`. Total = read-only computed. Delivery = integer days input.
+3. **Tax / GST %** input (default 18, suffix %).
+4. **Note / terms** textarea (placeholder "Payment terms: 20 days net…") and **Payment terms (days)** number input *(extension)*.
+5. **Totals panel** (right): **Subtotal**, **GST (n%)**, **Grand total**, updating live (client preview; server value shown after save).
+6. Buttons: **Submit Quotation** (primary), **Save Draft** (outline).
+
+States
+| State | UI |
 |---|---|
-| `Button` | primary, outline, ghost, danger; sizes sm/md; loading, disabled |
-| `Input`, `Select`, `Textarea`, `PasswordInput` | label, helper, error, required marker |
-| `Badge` / `StatusBadge` | Active (green), Pending (amber), Blocked (red); dot + text |
-| `Card`, `StatCard` | bordered surface; StatCard = value + label + helper |
-| `DataTable` | header, rows, loading skeleton, empty, error, pagination |
-| `FilterChips` | single-select with counts |
-| `SearchInput` | debounce, clear button |
-| `Modal`, `Drawer`, `ConfirmDialog` | focus trap, Esc to close, aria roles |
-| `EmptyState` | icon, title, description, optional action |
-| `Toast` | success, error, info |
-| `Sidebar`, `Topbar`, `AppShell` | role-aware nav |
-| `Skeleton`, `Spinner` | loading |
-| `ComingSoon` | placeholder module page |
+| New | Empty price cells, defaults (GST 18) |
+| Draft saved | Banner "Draft saved — not visible to the buyer until submitted" |
+| Submitted, before deadline | Banner "Submitted on {date}. You can edit until {deadline}." Button label becomes **Update Quotation** |
+| After deadline / RFQ closed / selected | Read-only, banner explains why; buttons hidden |
+| Vendor blocked | Read-only with message "Your account can't submit quotations. Contact the buyer." |
+| Version conflict | Dialog: "This quotation changed elsewhere. Reload to continue." |
+| Submit validation | Missing prices/delivery highlighted per row; "Price all N items to submit" |
 
-## 6. UX States and Copy
+Submit opens a confirm: "Submit quotation for ₹2,00,010? You can edit until {deadline}."
+Display check against the mockup sample: 25 × ₹3,500 = ₹87,500; 10 × ₹8,200 = ₹82,000; subtotal ₹1,69,500; GST 18% ₹30,510; grand total ₹2,00,010.
 
-| State | Treatment |
+### 4.6 Screen 7 — Quotation Comparison (`/rfqs/:rfqId/compare`)
+
+Header: **"Quotation Comparison"**; subtitle **"RFQ: {title} - {n} quotations received"**. Breadcrumb back to RFQ detail.
+
+**Toolbar (extension for required sort/filter, placed above the table):** Sort by [Price ▾ | Delivery | Rating | Submitted] [↑/↓] · Filters: Max price (`MoneyInput`), Max delivery (days), Min rating, Vendors (multi-select) · **Reset**. Active filters shown as removable chips.
+
+**Table (wireframe):**
+
+| Criteria | **{Vendor 1} (Lowest)** *(green column)* | {Vendor 2} | {Vendor 3} |
+|---|---|---|---|
+| Grand Total | ₹1,85,000 | ₹2,00,010 | ₹2,14,800 |
+| GST % | 18 | 18 | 18 |
+| Delivery (days) | 10 | 14 | 7 |
+| Vendor rating | 4.5/5 | 4.2/5 | 3.8/5 |
+| Payment terms | 30 days | 30 days | 15 days |
+| *(button row)* | **Select** | **Select** | **Select** |
+
+- Column header shows vendor name; the lowest column also shows a **"Lowest"** badge and the green background. Ties: every tied column is marked.
+- Footer note under the table (as in wireframe): *"Green = lowest price."* Replace the wireframe's "selecting vendor initiates the approval workflow" with *"Selecting a vendor marks it for approval (approval starts in Week 3)."* (see PRD deviation #3).
+- Selected quotation column gets a "Selected" badge and the button becomes **Selected ✓** / "Change selection"; confirm dialog before selecting: "Select {vendor} (₹1,85,000)? The RFQ will be closed to further quotation changes."
+- **Line-item breakdown** *(extension, collapsed by default)*: rows per item with each vendor's unit price and delivery; lowest unit price per row in bold green.
+- Quotations from blocked vendors show a "Vendor blocked" warning and disabled Select; excluded from "Lowest".
+- If a filter hides the overall lowest, show an info chip: "Lowest overall (₹1,85,000, Infra Supplies) is hidden by filters".
+- Data comes solely from `GET /rfqs/:id/comparison`; the client does not compute totals or the lowest.
+
+States
+| State | UI |
 |---|---|
-| Loading | Skeleton rows/cards, never a blank screen |
-| Empty (no vendors) | "No vendors yet. Add your first vendor." + Add Vendor (if permitted) |
-| Empty (no results) | "No vendors match your search." + Clear filters |
-| API error | Inline error panel with Retry |
-| Forbidden | "You don't have permission to view this page." + back to dashboard |
-| Session expired | Redirect to login with "Please sign in again" toast |
-| Form submit success | Toast, modal closes, list refreshes |
+| Loading | Table skeleton with column placeholders |
+| No quotations | EmptyState "No quotations received yet" + deadline countdown + "Back to RFQ" |
+| Only drafts exist | Same, helper "Vendors have saved drafts but not submitted" (count only, no content) |
+| All filtered out | "No quotations match your filters" + Reset |
+| Error | Inline error with Retry |
+| Manager role | Table visible, Select buttons hidden |
 
-Tone: concise, professional, no jargon. Currency ₹; dates `DD MMM YYYY`.
+Responsive: ≥ 1024px full table (sticky criteria column, horizontal scroll beyond 5 vendors); < 768px each vendor becomes a stacked card with the same rows, lowest card on top with green border + badge, Select button at the bottom.
 
-## 7. Accessibility Checklist
-- All inputs have visible labels (not placeholder-only) and `aria-invalid` + described error text.
-- Status conveyed by text + color.
-- Modals/drawers trap focus, restore focus on close, close with Esc.
-- Tables use proper `<th scope>`; row actions reachable by keyboard.
-- Minimum touch target 40px; focus ring always visible.
-- Respect `prefers-reduced-motion`.
+## 5. Dashboard Changes (Screen 3 delta)
 
-## 8. Design QA Checklist
-- [ ] Sidebar order and labels match the mockup exactly
-- [ ] Active nav highlight is green
-- [ ] Dashboard shows 4 cards, recent POs panel, spending panel, 3 quick actions
-- [ ] Vendors page shows search, 4 chips with counts, 6-column table, "+ Add Vendor"
-- [ ] Registration contains every mockup field
-- [ ] Empty states present for all future-week data
-- [ ] Verified at 375px, 768px, 1280px widths
+| Item | Week 2 behavior |
+|---|---|
+| Active RFQ's card | Real count (staff: all Open; vendor: assigned Open); clicking opens `/rfqs` (staff) or `/quotations` (vendor) |
+| Pending Approvals / PO's this month / Overdue invoices | Unchanged empty values with helper text (Week 3/4) |
+| Quick action **+ New RFQ** | Enabled for Admin/Officer → `/rfqs/new`; hidden for Manager/Vendor |
+| Quick action **Add Vendor**, **View Invoices** | Unchanged from Week 1 |
+| Recent Purchase Orders / Spending Trends | Still empty states |
+
+## 6. Week 1 Screens — Deltas
+
+- **Vendors form:** add optional **Rating** (0.0–5.0, step 0.1). Vendors table keeps six columns; rating shown in drawer. 
+- **Vendor drawer:** new **Portal users** section: list linked users (name, email), **Link user** (search Vendor-role users by email), **Unlink**. Visible to Admin/Officer.
+- **Sidebar:** RFQ's and Quotations active for all roles that have access; Vendor sees `Dashboard, RFQ's` *(shows their assigned list)*, `Quotations`. To avoid duplicate vendor pages, the vendor's "RFQ's" item routes to the same assigned-RFQ list as "Quotations" **(extension; confirm)**.
+
+## 7. Copy and Formatting
+
+- Currency `₹` with Indian grouping (`₹2,00,010`); dates `DD MMM YYYY`; times 24h with timezone label on deadline fields.
+- Button labels (exact): `Save & Send to Vendors`, `Save as Draft`, `+ add line item`, `+ add vendor`, `Submit Quotation`, `Save Draft`, `Select`.
+- Destructive/irreversible actions always use `ConfirmDialog` and state the consequence.
+- Error tone: say what happened and what to do ("The deadline has passed, so this quotation can no longer be changed.").
+
+## 8. Accessibility
+
+- Comparison table: real `<table>` with `<th scope="col|row">`; lowest conveyed by text badge + color + `aria-label="Lowest price"`; sort/filter controls labeled; focus ring on all actions.
+- Dropzone: button-equivalent with keyboard activation; progress announced via `aria-live="polite"`.
+- Line-items editor: row add/remove announced; each input labeled by row ("Item 2 quantity").
+- Stepper: ordered list, `aria-current`, not the only way to navigate.
+- Countdown text is static text (not a ticking live region); refresh on focus.
+- Minimum 40px targets; contrast AA on green highlight (white on `#15803D` ≥ 4.5:1).
+
+## 9. Design QA Checklist
+
+- [ ] Create RFQ shows stepper, two-column layout, chips for vendors, dashed attachments box, both buttons with exact labels
+- [ ] Submit Quotations shows RFQ summary, quote table with 5 columns, Tax/GST %, Note/terms, totals panel, both buttons
+- [ ] Comparison shows criteria rows exactly as the wireframe (+ added toolbar and button row), lowest column green with badge, footer note
+- [ ] Mockup arithmetic reproduced (₹1,69,500 / ₹30,510 / ₹2,00,010)
+- [ ] All states designed: loading, empty, error, read-only, deadline passed, version conflict
+- [ ] Vendor role shows no staff data; Manager sees read-only controls
+- [ ] Verified at 375 / 768 / 1280 widths; keyboard-only pass on all three screens
