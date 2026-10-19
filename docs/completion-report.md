@@ -172,6 +172,7 @@ The server integration test suite was executed using **Vitest** and **Supertest*
 | `12-vendor-quote-submission.png` | Vendor Portal: Quotation submission form with line pricing & notes | Screen 6 |
 | `13-vendor-quote-calculations.png` | Vendor Portal: Live financial calculations (Subtotal, GST 18%, Grand Total) | Screen 6 |
 | `14-quotation-comparison-matrix.png` | Quotation Comparison Matrix: Side-by-side cards, L1 green badge, item matrix & winner selection | Screen 7 |
+| `15-quotations-hub.png` | Quotations Hub: Vendor proposal evaluation overview & quick comparison launcher | Screen 7 Hub |
 
 ---
 

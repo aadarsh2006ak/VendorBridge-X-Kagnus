@@ -25,6 +25,7 @@ import { CreateRfqPage } from './pages/rfqs/CreateRfqPage';
 import { RfqDetailPage } from './pages/rfqs/RfqDetailPage';
 import { RfqComparisonPage } from './pages/rfqs/RfqComparisonPage';
 import { VendorQuotePage } from './pages/vendor-portal/VendorQuotePage';
+import { QuotationsHubPage } from './pages/quotations/QuotationsHubPage';
 
 // Placeholders for Later Weeks (Week 3 & Week 4)
 import { ApprovalsPage } from './pages/placeholders/ApprovalsPage';
@@ -83,7 +84,7 @@ export function App() {
                   {/* Week 2: RFQ & Quotation Management */}
                   {/* RFQ List (All roles: Staff sees master list, Vendor sees assigned list) */}
                   <Route path="/rfqs" element={<RfqListPage />} />
-                  <Route path="/quotations" element={<Navigate to="/rfqs" replace />} />
+                  <Route path="/quotations" element={<QuotationsHubPage />} />
 
                   {/* Screen 5: Create & Edit RFQ (Admin, Procurement Officer) */}
                   <Route
@@ -109,6 +110,7 @@ export function App() {
                     }
                   >
                     <Route path="/rfqs/:id/comparison" element={<RfqComparisonPage />} />
+                    <Route path="/rfqs/:id/compare" element={<RfqComparisonPage />} />
                   </Route>
 
                   {/* Screen 6: Vendor Portal Quote Submission (Vendor) */}

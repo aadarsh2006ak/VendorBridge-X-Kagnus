@@ -139,7 +139,7 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
       <div className="p-4 border-t border-border-default text-xs text-muted flex items-center justify-between">
         <span>VendorBridge ERP</span>
         <span className="px-1.5 py-0.5 rounded bg-surface-2 text-[10px] text-brand border border-brand/20">
-          v1.0 (W1)
+          v2.0 (W2)
         </span>
       </div>
     </aside>

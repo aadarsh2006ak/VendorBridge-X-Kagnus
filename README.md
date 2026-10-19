@@ -233,6 +233,7 @@ npm test
 | 12 | `12-vendor-quote-submission.png` | Screen 6: Vendor quotation pricing workspace | <img src="docs/screenshots/12-vendor-quote-submission.png" width="260" /> |
 | 13 | `13-vendor-quote-calculations.png` | Screen 6: Live calculations (Subtotal, GST, Grand Total) | <img src="docs/screenshots/13-vendor-quote-calculations.png" width="260" /> |
 | 14 | `14-quotation-comparison-matrix.png` | Screen 7: Quotation Comparison Matrix & Lowest Price (L1) | <img src="docs/screenshots/14-quotation-comparison-matrix.png" width="260" /> |
+| 15 | `15-quotations-hub.png` | Quotations Hub: Evaluation & proposal comparison overview | <img src="docs/screenshots/15-quotations-hub.png" width="260" /> |
 
 ---
 
