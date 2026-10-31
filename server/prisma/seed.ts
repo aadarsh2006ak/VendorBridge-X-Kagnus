@@ -10,6 +10,12 @@ async function main() {
   await prisma.auditLog.deleteMany();
   await prisma.session.deleteMany();
   await prisma.passwordResetToken.deleteMany();
+  await prisma.invoiceItem.deleteMany();
+  await prisma.invoice.deleteMany();
+  await prisma.purchaseOrderItem.deleteMany();
+  await prisma.purchaseOrder.deleteMany();
+  await prisma.approvalStep.deleteMany();
+  await prisma.approvalRequest.deleteMany();
   await prisma.quotationRevision.deleteMany();
   await prisma.quotationItem.deleteMany();
   await prisma.quotation.deleteMany();
@@ -664,7 +670,300 @@ async function main() {
     },
   });
 
-  console.log('✅ Seeded 3 Week-2 RFQs with items, vendor invitations, and submitted quotations!');
+  // 7. Seed Week 3: Pending Approval on RFQ 2 (Screen 8 Live Flow)
+  const rfq2Db = await prisma.rfq.findUnique({
+    where: { code: 'RFQ-2026-0002' },
+    include: { quotations: { include: { vendor: true } } },
+  });
+
+  if (rfq2Db && rfq2Db.quotations.length > 0) {
+    const selectedQuote = rfq2Db.quotations[0]; // BlueStar
+    await prisma.rfq.update({
+      where: { id: rfq2Db.id },
+      data: {
+        status: 'QUOTATION_SELECTED',
+        selectedQuotationId: selectedQuote.id,
+        selectedById: officerUser.id,
+        selectedAt: new Date(),
+      },
+    });
+
+    const pendingApproval = await prisma.approvalRequest.create({
+      data: {
+        rfqId: rfq2Db.id,
+        quotationId: selectedQuote.id,
+        requestedById: officerUser.id,
+        status: 'PENDING',
+        currentStep: 3, // Step 3: L2 approval (Awaiting Priya Shah)
+        timeline: {
+          create: [
+            {
+              stepNumber: 1,
+              stepName: 'Submitted',
+              approverName: `${officerUser.firstName} ${officerUser.lastName} (Procurement head)`,
+              approverRole: 'Procurement Officer',
+              status: 'APPROVED',
+              decidedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+              remarks: 'Proposal submitted for technical and financial review',
+            },
+            {
+              stepNumber: 2,
+              stepName: 'L1 Review',
+              approverName: 'Rahul Mehta (Procurement head)',
+              approverRole: 'Procurement Head',
+              status: 'APPROVED',
+              decidedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+              remarks: 'Approved on review - verified against RFQ specifications',
+            },
+            {
+              stepNumber: 3,
+              stepName: 'L2 approval',
+              approverName: 'Priya Shah (Finance manager)',
+              approverRole: 'Finance Manager',
+              status: 'AWAITING',
+              remarks: 'Assigned for management sign-off',
+            },
+            {
+              stepNumber: 4,
+              stepName: 'Generate PO',
+              approverName: 'Operations Team',
+              approverRole: 'Procurement Operations',
+              status: 'PENDING',
+              remarks: 'Pending L2 approval',
+            },
+          ],
+        },
+      },
+    });
+  }
+
+  // 8. Seed Golden Excalidraw Screen 9 Record: Approved RFQ + PO-2025-0068 + Invoice INV-2025-0001
+  const infraVendor = await prisma.vendor.findFirst({
+    where: { name: { contains: 'Infra Supplies', mode: 'insensitive' } },
+  });
+
+  if (infraVendor) {
+    const goldenRfq = await prisma.rfq.create({
+      data: {
+        code: 'RFQ-2025-0042',
+        title: 'Office Furniture Procurement Q2',
+        category: 'Furniture',
+        description: 'Executive and task seating for regional branch office expansion.',
+        deadline: new Date(2025, 5, 15, 23, 59, 0),
+        status: 'QUOTATION_SELECTED',
+        createdById: officerUser.id,
+        items: {
+          create: [
+            {
+              position: 1,
+              name: 'Ergonomic chair',
+              description: 'Commercial ergonomic chair with lumbar support',
+              quantity: 25,
+              unit: 'Units',
+            },
+            {
+              position: 2,
+              name: 'Tech Core LTD',
+              description: 'Adjustable motorized sit-stand work desk',
+              quantity: 10,
+              unit: 'Units',
+            },
+          ],
+        },
+      },
+      include: { items: true },
+    });
+
+    await prisma.rfqVendor.create({
+      data: {
+        rfqId: goldenRfq.id,
+        vendorId: infraVendor.id,
+        viewedAt: new Date(2025, 4, 18),
+      },
+    });
+
+    // Golden Quotation matching Screen 6 & 9:
+    // 25 * 3,500 = 87,500; 10 * 8,200 = 82,000; Subtotal = 1,69,500; GST 18% = 30,510; Total = 2,00,010
+    const goldenQuote = await prisma.quotation.create({
+      data: {
+        rfqId: goldenRfq.id,
+        vendorId: infraVendor.id,
+        status: 'APPROVED',
+        taxRate: 18,
+        subtotal: 169500,
+        taxAmount: 30510,
+        grandTotal: 200010,
+        deliveryDays: 10,
+        paymentTermsDays: 30,
+        notes: 'Payment terms: 30 days net from invoice date. 3-year warranty included.',
+        submittedAt: new Date(2025, 4, 19, 14, 30),
+        items: {
+          create: [
+            {
+              rfqItemId: goldenRfq.items[0].id,
+              unitPrice: 3500,
+              deliveryDays: 10,
+              lineTotal: 87500,
+            },
+            {
+              rfqItemId: goldenRfq.items[1].id,
+              unitPrice: 8200,
+              deliveryDays: 10,
+              lineTotal: 82000,
+            },
+          ],
+        },
+      },
+    });
+
+    await prisma.rfq.update({
+      where: { id: goldenRfq.id },
+      data: {
+        selectedQuotationId: goldenQuote.id,
+        selectedById: officerUser.id,
+        selectedAt: new Date(2025, 4, 20, 10, 32),
+      },
+    });
+
+    // Golden Approval Request matching Screen 8
+    await prisma.approvalRequest.create({
+      data: {
+        rfqId: goldenRfq.id,
+        quotationId: goldenQuote.id,
+        requestedById: officerUser.id,
+        decidedById: managerUser.id,
+        status: 'APPROVED',
+        currentStep: 4,
+        remarks: 'Approved on financial review - complies with Q2 procurement budget.',
+        decidedAt: new Date(2025, 4, 21, 11, 15),
+        timeline: {
+          create: [
+            {
+              stepNumber: 1,
+              stepName: 'Submitted',
+              approverName: 'Rahul Mehta (Procurement head)',
+              approverRole: 'Procurement Head',
+              status: 'APPROVED',
+              decidedAt: new Date(2025, 4, 20, 10, 32),
+              remarks: 'Submitted for evaluation',
+            },
+            {
+              stepNumber: 2,
+              stepName: 'L1 Review',
+              approverName: 'Rahul Mehta (Procurement head)',
+              approverRole: 'Procurement Head',
+              status: 'APPROVED',
+              decidedAt: new Date(2025, 4, 20, 11, 0),
+              remarks: 'Technical specifications approved',
+            },
+            {
+              stepNumber: 3,
+              stepName: 'L2 approval',
+              approverName: 'Priya Shah (Finance manager)',
+              approverRole: 'Finance Manager',
+              status: 'APPROVED',
+              decidedAt: new Date(2025, 4, 21, 11, 15),
+              remarks: 'Financial terms and pricing approved',
+            },
+            {
+              stepNumber: 4,
+              stepName: 'Generate PO',
+              approverName: 'Operations Team',
+              approverRole: 'Procurement Operations',
+              status: 'COMPLETED',
+              decidedAt: new Date(2025, 4, 21, 11, 20),
+              remarks: 'PO-2025-0068 generated automatically',
+            },
+          ],
+        },
+      },
+    });
+
+    // Golden Purchase Order matching Screen 9: PO-2025-0068
+    const goldenPo = await prisma.purchaseOrder.create({
+      data: {
+        poNumber: 'PO-2025-0068',
+        rfqId: goldenRfq.id,
+        quotationId: goldenQuote.id,
+        vendorId: infraVendor.id,
+        createdById: managerUser.id,
+        status: 'ISSUED',
+        poDate: new Date(2025, 4, 21),
+        deliveryDate: new Date(2025, 4, 31),
+        paymentTerms: '30 days net',
+        notes: 'Delivery to Ahmedabad regional warehouse floor 2.',
+        buyerName: 'your Organization Name',
+        buyerAddress: '123 business park, ahmedabad',
+        buyerGstin: '25383438AFB',
+        subtotal: 169500,
+        taxRate: 18,
+        cgstAmount: 15255,
+        sgstAmount: 15255,
+        taxAmount: 30510,
+        grandTotal: 200010,
+        items: {
+          create: [
+            {
+              name: 'Ergonomic chair',
+              quantity: 25,
+              unit: 'Units',
+              unitPrice: 3500,
+              lineTotal: 87500,
+            },
+            {
+              name: 'Tech Core LTD',
+              quantity: 10,
+              unit: 'Units',
+              unitPrice: 8200,
+              lineTotal: 82000,
+            },
+          ],
+        },
+      },
+    });
+
+    // Golden Invoice matching Screen 9: INV-2025-0001 (due 21 june 2025)
+    await prisma.invoice.create({
+      data: {
+        invoiceNumber: 'INV-2025-0001',
+        purchaseOrderId: goldenPo.id,
+        vendorId: infraVendor.id,
+        createdById: officerUser.id,
+        status: 'PENDING_PAYMENT',
+        invoiceDate: new Date(2025, 4, 22),
+        dueDate: new Date(2025, 5, 21),
+        buyerName: 'your Organization Name',
+        buyerAddress: '123 business park, ahmedabad',
+        buyerGstin: '25383438AFB',
+        subtotal: 169500,
+        taxRate: 18,
+        cgstAmount: 15255,
+        sgstAmount: 15255,
+        taxAmount: 30510,
+        grandTotal: 200010,
+        items: {
+          create: [
+            {
+              name: 'Ergonomic chair',
+              quantity: 25,
+              unit: 'Units',
+              unitPrice: 3500,
+              lineTotal: 87500,
+            },
+            {
+              name: 'Tech Core LTD',
+              quantity: 10,
+              unit: 'Units',
+              unitPrice: 8200,
+              lineTotal: 82000,
+            },
+          ],
+        },
+      },
+    });
+  }
+
+  console.log('✅ Seeded Week 3 Approvals, Purchase Orders (PO-2025-0068), and Invoices (INV-2025-0001)!');
   console.log('🎉 Database seed completed successfully!');
 }
 

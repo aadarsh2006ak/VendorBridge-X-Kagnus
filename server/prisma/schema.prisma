@@ -31,6 +31,27 @@ enum RfqStatus {
 enum QuotationStatus {
   DRAFT
   SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PoStatus {
+  ISSUED
+  CONFIRMED
+  DELIVERED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  PENDING_PAYMENT
+  PAID
+  CANCELLED
 }
 
 model Counter {
@@ -52,13 +73,17 @@ model User {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  sessions      Session[]
-  resetTokens   PasswordResetToken[]
-  vendors       Vendor[]
-  auditLogs     AuditLog[]
-  vendorMembers VendorMember[]
-  createdRfqs   Rfq[]                @relation("RfqCreator")
-  selectedRfqs  Rfq[]                @relation("RfqSelector")
+  sessions           Session[]
+  resetTokens        PasswordResetToken[]
+  vendors            Vendor[]
+  auditLogs          AuditLog[]
+  vendorMembers      VendorMember[]
+  createdRfqs        Rfq[]                @relation("RfqCreator")
+  selectedRfqs       Rfq[]                @relation("RfqSelector")
+  approvalsRequested ApprovalRequest[]    @relation("ApprovalRequester")
+  approvalsDecided   ApprovalRequest[]    @relation("ApprovalDecider")
+  purchaseOrders     PurchaseOrder[]      @relation("PoCreator")
+  invoices           Invoice[]            @relation("InvoiceCreator")
 }
 
 model Session {
@@ -105,9 +130,11 @@ model Vendor {
   updatedAt    DateTime     @updatedAt
   createdBy    User         @relation(fields: [createdById], references: [id])
 
-  members      VendorMember[]
-  rfqs         RfqVendor[]
-  quotations   Quotation[]
+  members        VendorMember[]
+  rfqs           RfqVendor[]
+  quotations     Quotation[]
+  purchaseOrders PurchaseOrder[]
+  invoices       Invoice[]
 
   @@index([status])
   @@index([category])
@@ -150,10 +177,12 @@ model Rfq {
 
   createdBy           User            @relation("RfqCreator", fields: [createdById], references: [id])
   selectedBy          User?           @relation("RfqSelector", fields: [selectedById], references: [id])
-  items               RfqItem[]
-  vendors             RfqVendor[]
-  attachments         RfqAttachment[]
-  quotations          Quotation[]     @relation("RfqQuotations")
+  items            RfqItem[]
+  vendors          RfqVendor[]
+  attachments      RfqAttachment[]
+  quotations       Quotation[]       @relation("RfqQuotations")
+  approvalRequests ApprovalRequest[]
+  purchaseOrders   PurchaseOrder[]
 
   @@index([status, deadline])
   @@index([createdById, status])
@@ -223,6 +252,8 @@ model Quotation {
   vendor           Vendor              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   items            QuotationItem[]
   revisions        QuotationRevision[]
+  approvalRequest  ApprovalRequest?
+  purchaseOrder    PurchaseOrder?
 
   @@unique([rfqId, vendorId]) // BR-5: One quotation per (RFQ, Vendor)
   @@index([rfqId, status, grandTotal])
@@ -269,4 +300,148 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@index([createdAt])
+}
+
+model ApprovalRequest {
+  id            String         @id @default(uuid())
+  rfqId         String
+  quotationId   String         @unique
+  requestedById String
+  decidedById   String?
+  status        ApprovalStatus @default(PENDING)
+  currentStep   Int            @default(2) // 1: Submitted, 2: L1 Review, 3: L2 Approval, 4: Generate PO
+  remarks       String?
+  decidedAt     DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  rfq         Rfq            @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  quotation   Quotation      @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  requestedBy User           @relation("ApprovalRequester", fields: [requestedById], references: [id])
+  decidedBy   User?          @relation("ApprovalDecider", fields: [decidedById], references: [id])
+  timeline    ApprovalStep[]
+
+  @@index([rfqId])
+  @@index([status])
+  @@index([requestedById])
+  @@index([decidedById])
+}
+
+model ApprovalStep {
+  id                String    @id @default(uuid())
+  approvalRequestId String
+  stepNumber        Int
+  stepName          String    // e.g. "Submitted", "L1 Review", "L2 approval", "Generate PO"
+  approverName      String    // e.g. "Rahul Mehta (Procurement head)", "Priya Shah (Finance manager)"
+  approverRole      String    // e.g. "Procurement Head", "Finance Manager"
+  status            String    // "APPROVED", "AWAITING", "PENDING", "REJECTED"
+  remarks           String?
+  decidedAt         DateTime?
+  createdAt         DateTime  @default(now())
+
+  approvalRequest ApprovalRequest @relation(fields: [approvalRequestId], references: [id], onDelete: Cascade)
+
+  @@index([approvalRequestId])
+}
+
+model PurchaseOrder {
+  id           String    @id @default(uuid())
+  poNumber     String    @unique // PO-YYYY-NNNN
+  rfqId        String
+  quotationId  String    @unique
+  vendorId     String
+  createdById  String
+  status       PoStatus  @default(ISSUED)
+  poDate       DateTime  @default(now())
+  deliveryDate DateTime?
+  paymentTerms String?   @default("30 days net")
+  notes        String?
+
+  buyerName    String @default("Your Organization Name")
+  buyerAddress String @default("123 Business Park, Ahmedabad")
+  buyerGstin   String @default("25383438AFB")
+
+  subtotal   Decimal @db.Decimal(14, 2)
+  taxRate    Decimal @db.Decimal(5, 2) @default(18.00)
+  cgstAmount Decimal @db.Decimal(14, 2)
+  sgstAmount Decimal @db.Decimal(14, 2)
+  taxAmount  Decimal @db.Decimal(14, 2)
+  grandTotal Decimal @db.Decimal(14, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rfq       Rfq                 @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  quotation Quotation           @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  vendor    Vendor              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  createdBy User                @relation("PoCreator", fields: [createdById], references: [id])
+  items     PurchaseOrderItem[]
+  invoice   Invoice?
+
+  @@index([rfqId])
+  @@index([vendorId])
+  @@index([status])
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(uuid())
+  purchaseOrderId String
+  name            String
+  description     String?
+  quantity        Decimal       @db.Decimal(12, 2)
+  unit            String
+  unitPrice       Decimal       @db.Decimal(14, 2)
+  lineTotal       Decimal       @db.Decimal(14, 2)
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  @@index([purchaseOrderId])
+}
+
+model Invoice {
+  id              String        @id @default(uuid())
+  invoiceNumber   String        @unique // INV-YYYY-NNNN
+  purchaseOrderId String        @unique
+  vendorId        String
+  createdById     String
+  status          InvoiceStatus @default(PENDING_PAYMENT)
+  invoiceDate     DateTime      @default(now())
+  dueDate         DateTime
+  paidAt          DateTime?
+  notes           String?
+
+  buyerName    String @default("Your Organization Name")
+  buyerAddress String @default("123 Business Park, Ahmedabad")
+  buyerGstin   String @default("25383438AFB")
+
+  subtotal   Decimal @db.Decimal(14, 2)
+  taxRate    Decimal @db.Decimal(5, 2) @default(18.00)
+  cgstAmount Decimal @db.Decimal(14, 2)
+  sgstAmount Decimal @db.Decimal(14, 2)
+  taxAmount  Decimal @db.Decimal(14, 2)
+  grandTotal Decimal @db.Decimal(14, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  vendor        Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  createdBy     User          @relation("InvoiceCreator", fields: [createdById], references: [id])
+  items         InvoiceItem[]
+
+  @@index([purchaseOrderId])
+  @@index([vendorId])
+  @@index([status])
+}
+
+model InvoiceItem {
+  id        String   @id @default(uuid())
+  invoiceId String
+  name      String
+  quantity  Decimal  @db.Decimal(12, 2)
+  unit      String
+  unitPrice Decimal  @db.Decimal(14, 2)
+  lineTotal Decimal  @db.Decimal(14, 2)
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
 }

@@ -27,10 +27,14 @@ import { RfqComparisonPage } from './pages/rfqs/RfqComparisonPage';
 import { VendorQuotePage } from './pages/vendor-portal/VendorQuotePage';
 import { QuotationsHubPage } from './pages/quotations/QuotationsHubPage';
 
-// Placeholders for Later Weeks (Week 3 & Week 4)
-import { ApprovalsPage } from './pages/placeholders/ApprovalsPage';
-import { PurchaseOrdersPage } from './pages/placeholders/PurchaseOrdersPage';
-import { InvoicesPage } from './pages/placeholders/InvoicesPage';
+// Active Functional Pages (Week 3 - Approvals, Purchase Orders & Invoices)
+import { ApprovalsListPage } from './pages/approvals/ApprovalsListPage';
+import { ApprovalWorkflowPage } from './pages/approvals/ApprovalWorkflowPage';
+import { PurchaseOrdersListPage } from './pages/purchase-orders/PurchaseOrdersListPage';
+import { InvoicesListPage } from './pages/invoices/InvoicesListPage';
+import { InvoiceDocumentPage } from './pages/invoices/InvoiceDocumentPage';
+
+// Placeholders for Later Weeks (Week 4)
 import { ReportsPage } from './pages/placeholders/ReportsPage';
 import { ActivityPage } from './pages/placeholders/ActivityPage';
 
@@ -124,7 +128,7 @@ export function App() {
                     <Route path="/vendor-portal/rfqs/:id/quote" element={<VendorQuotePage />} />
                   </Route>
 
-                  {/* Placeholder Modules (Weeks 3 & 4) */}
+                  {/* Week 3: Approval Workflow (Screen 8) */}
                   <Route
                     element={
                       <RoleRoute
@@ -132,10 +136,16 @@ export function App() {
                       />
                     }
                   >
-                    <Route path="/approvals" element={<ApprovalsPage />} />
+                    <Route path="/approvals" element={<ApprovalsListPage />} />
+                    <Route path="/approvals/:id" element={<ApprovalWorkflowPage />} />
+                    <Route path="/approvals/by-rfq/:rfqId" element={<ApprovalWorkflowPage />} />
                   </Route>
-                  <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
-                  <Route path="/invoices" element={<InvoicesPage />} />
+
+                  {/* Week 3: Purchase Orders & Invoices (Screen 9) */}
+                  <Route path="/purchase-orders" element={<PurchaseOrdersListPage />} />
+                  <Route path="/purchase-orders/:id" element={<InvoiceDocumentPage />} />
+                  <Route path="/invoices" element={<InvoicesListPage />} />
+                  <Route path="/invoices/:id" element={<InvoiceDocumentPage />} />
                   <Route
                     element={
                       <RoleRoute

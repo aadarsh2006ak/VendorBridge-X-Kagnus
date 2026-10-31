@@ -71,5 +71,17 @@ app.use('/api/v1/rfqs', rfqRouter);
 import { vendorPortalRouter } from './modules/vendor-portal/vendor-portal.routes.js';
 app.use('/api/v1/vendor-portal', vendorPortalRouter);
 
+// Week 3 Approval Routes
+import { approvalRouter } from './modules/approvals/approval.routes.js';
+app.use('/api/v1/approvals', approvalRouter);
+
+// Week 3 Purchase Order Routes
+import { purchaseOrderRouter } from './modules/purchase-orders/po.routes.js';
+app.use('/api/v1/purchase-orders', purchaseOrderRouter);
+
+// Week 3 Invoice Routes
+import { invoiceRouter } from './modules/invoices/invoice.routes.js';
+app.use('/api/v1/invoices', invoiceRouter);
+
 // Central error handler
 app.use(errorHandler);

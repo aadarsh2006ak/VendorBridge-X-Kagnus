@@ -113,9 +113,10 @@ describe('Vendor Features & Functional Tests', () => {
       expect(res.status).toBe(200);
       expect(typeof res.body.activeRfqs).toBe('number');
       expect(res.body.activeRfqs).toBeGreaterThanOrEqual(0);
-      expect(res.body.pendingApprovals).toBe(0);
-      expect(res.body.posThisMonth).toEqual({ count: 0, amount: 0 });
-      expect(res.body.overdueInvoices).toBe(0);
+      expect(res.body.pendingApprovals).toBeGreaterThanOrEqual(0);
+      expect(typeof res.body.posThisMonth.count).toBe('number');
+      expect(typeof res.body.posThisMonth.amount).toBe('number');
+      expect(res.body.overdueInvoices).toBeGreaterThanOrEqual(0);
       expect(Array.isArray(res.body.recentPurchaseOrders)).toBe(true);
       expect(Array.isArray(res.body.spendingTrend)).toBe(true);
     });

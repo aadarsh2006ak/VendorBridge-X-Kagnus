@@ -7,6 +7,7 @@ import {
 } from '../../lib/errors.js';
 import { RfqService } from '../rfqs/rfq.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { ApprovalService } from '../approvals/approval.service.js';
 import { QuotationStatus, RfqStatus, VendorStatus } from '@prisma/client';
 
 export interface ComparisonQueryOptions {
@@ -317,6 +318,13 @@ export class ComparisonService {
           items: true,
           vendors: { include: { vendor: true } },
         },
+      });
+
+      // Synchronize Approval Request (Screen 8: L2 approval awaiting)
+      await ApprovalService.syncApprovalOnQuotationSelection(tx, {
+        rfqId,
+        quotationId,
+        requestedById: userId,
       });
 
       await AuditService.log({

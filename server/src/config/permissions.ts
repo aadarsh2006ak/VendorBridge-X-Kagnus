@@ -32,6 +32,20 @@ export const PERMISSIONS = {
   'quotation:compare': ['ADMIN', 'PROCUREMENT_OFFICER', 'MANAGER'],
   'quotation:submit': ['VENDOR'],
   'vendorPortal:use': ['VENDOR'],
+
+  // Week 3 Approval Workflow
+  'approval:read': ['ADMIN', 'PROCUREMENT_OFFICER', 'MANAGER'],
+  'approval:decide': ['ADMIN', 'MANAGER'],
+
+  // Week 3 Purchase Orders
+  'po:read': ['ADMIN', 'PROCUREMENT_OFFICER', 'MANAGER', 'VENDOR'],
+  'po:create': ['ADMIN', 'PROCUREMENT_OFFICER', 'MANAGER'],
+
+  // Week 3 Invoices
+  'invoice:read': ['ADMIN', 'PROCUREMENT_OFFICER', 'MANAGER', 'VENDOR'],
+  'invoice:create': ['ADMIN', 'PROCUREMENT_OFFICER', 'MANAGER', 'VENDOR'],
+  'invoice:markPaid': ['ADMIN', 'MANAGER'],
+  'invoice:email': ['ADMIN', 'PROCUREMENT_OFFICER', 'MANAGER'],
 } as const;
 
 export type PermissionKey = keyof typeof PERMISSIONS;

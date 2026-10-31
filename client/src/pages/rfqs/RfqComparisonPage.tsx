@@ -15,6 +15,8 @@ import {
   Calendar,
   X,
   RotateCcw,
+  FileCheck2,
+  ArrowRight,
 } from 'lucide-react';
 import { api, getErrorMessage } from '../../lib/api';
 import { StatusBadge } from '../../components/ui/StatusBadge';
@@ -170,6 +172,35 @@ export function RfqComparisonPage() {
           </Button>
         )}
       </div>
+
+      {/* Screen 8 Approval Workflow Banner */}
+      {isSelected && (
+        <div className="p-4 rounded-xl border border-brand-500/30 bg-brand-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-brand-500/20 flex items-center justify-center text-brand-400 shrink-0">
+              <FileCheck2 className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-brand-300">
+                Winning Quotation Selected — Approval Workflow Active
+              </p>
+              <p className="text-xs text-secondary mt-0.5">
+                Review the 4-step approval chain and approve this procurement request in Screen 8.
+              </p>
+            </div>
+          </div>
+          <Link to={`/approvals/by-rfq/${rfq.id}`}>
+            <Button
+              size="sm"
+              variant="primary"
+              className="text-xs bg-brand-500 hover:bg-brand-600 font-medium inline-flex items-center gap-1.5 shrink-0"
+            >
+              <span>Open Approval Workflow</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
