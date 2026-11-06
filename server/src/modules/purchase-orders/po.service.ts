@@ -7,6 +7,7 @@ import {
   ConflictError,
 } from '../../lib/errors.js';
 import { AuditService } from '../audit/audit.service.js';
+import { NotificationService } from '../notifications/notification.service.js';
 import { ListPoQuery, CreatePoInput } from './po.schemas.js';
 
 export class PurchaseOrderService {
@@ -357,6 +358,16 @@ export class PurchaseOrderService {
           vendorName: quotation.vendor.name,
           grandTotal: po.grandTotal.toString(),
         },
+      });
+
+      // Notify vendor
+      await NotificationService.notifyVendorMembers(quotation.vendorId, {
+        title: `Purchase Order Issued: ${po.poNumber}`,
+        message: `Purchase order ${po.poNumber} has been issued to your company for quotation.`,
+        type: 'PO_GENERATED',
+        entityType: 'PURCHASE_ORDER',
+        entityId: po.id,
+        link: `/purchase-orders/${po.id}`,
       });
 
       return po;

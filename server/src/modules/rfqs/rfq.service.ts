@@ -9,6 +9,7 @@ import {
   InvalidStateTransitionError,
 } from '../../lib/errors.js';
 import { AuditService } from '../audit/audit.service.js';
+import { NotificationService } from '../notifications/notification.service.js';
 import {
   CreateRfqInput,
   UpdateRfqInput,
@@ -122,6 +123,19 @@ export class RfqService {
       metadata: { code: rfq.code, status: rfq.status, vendorsCount: input.assignedVendorIds.length },
       ip,
     });
+
+    if (isPublishing && input.assignedVendorIds?.length) {
+      for (const vendorId of input.assignedVendorIds) {
+        await NotificationService.notifyVendorMembers(vendorId, {
+          title: `New RFQ: ${rfq.title}`,
+          message: `Your company has been invited to submit a quotation for ${rfq.code}.`,
+          type: 'RFQ_PUBLISHED',
+          entityType: 'RFQ',
+          entityId: rfq.id,
+          link: `/vendor-portal/rfqs/${rfq.id}/quote`,
+        });
+      }
+    }
 
     return {
       ...rfq,
@@ -432,6 +446,19 @@ export class RfqService {
       entityId: id,
       ip,
     });
+
+    if (rfq.vendors?.length) {
+      for (const v of rfq.vendors) {
+        await NotificationService.notifyVendorMembers(v.vendorId, {
+          title: `RFQ Published: ${rfq.title}`,
+          message: `Your company has been invited to submit a quotation for ${rfq.code}.`,
+          type: 'RFQ_PUBLISHED',
+          entityType: 'RFQ',
+          entityId: rfq.id,
+          link: `/vendor-portal/rfqs/${rfq.id}/quote`,
+        });
+      }
+    }
 
     return updated;
   }

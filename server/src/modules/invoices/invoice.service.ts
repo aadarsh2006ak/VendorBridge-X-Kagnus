@@ -7,6 +7,7 @@ import {
   ConflictError,
 } from '../../lib/errors.js';
 import { AuditService } from '../audit/audit.service.js';
+import { NotificationService } from '../notifications/notification.service.js';
 import {
   ListInvoicesQuery,
   CreateInvoiceInput,
@@ -317,6 +318,16 @@ export class InvoiceService {
         },
       });
 
+      // Notify vendor
+      await NotificationService.notifyVendorMembers(po.vendorId, {
+        title: `Invoice Generated: ${invoice.invoiceNumber}`,
+        message: `Official invoice generated for Purchase Order ${po.poNumber}. Grand Total: ₹${invoice.grandTotal.toString()}.`,
+        type: 'INVOICE_GENERATED',
+        entityType: 'INVOICE',
+        entityId: invoice.id,
+        link: `/invoices/${invoice.id}`,
+      });
+
       return invoice;
     });
   }
@@ -373,6 +384,17 @@ export class InvoiceService {
         paymentReference: input.paymentReference,
       },
     });
+
+    if (input.status === 'PAID') {
+      await NotificationService.notifyVendorMembers(invoice.vendorId, {
+        title: `Payment Settled: ${invoice.invoiceNumber}`,
+        message: `Invoice ${invoice.invoiceNumber} has been marked as PAID. Reference: ${input.paymentReference || 'Direct Transfer'}.`,
+        type: 'INVOICE_PAID',
+        entityType: 'INVOICE',
+        entityId: invoice.id,
+        link: `/invoices/${invoice.id}`,
+      });
+    }
 
     return updated;
   }

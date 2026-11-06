@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, LogOut, User, Shield, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { NotificationDropdown } from './NotificationDropdown';
 
 interface TopbarProps {
   onToggleMobileMenu: () => void;
@@ -61,8 +62,11 @@ export function Topbar({ onToggleMobileMenu }: TopbarProps) {
         </div>
       </div>
 
-      {/* User Avatar Menu (Right) */}
-      <div className="relative" ref={dropdownRef}>
+      {/* User Actions & Avatar Menu (Right) */}
+      <div className="flex items-center gap-3">
+        <NotificationDropdown />
+
+        <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setIsDropdownOpen((prev) => !prev)}
           className="flex items-center gap-2.5 p-1.5 pl-2 rounded-full hover:bg-surface-2 transition-colors border border-transparent hover:border-border-default focus:outline-none focus:ring-2 focus:ring-brand"
@@ -116,6 +120,7 @@ export function Topbar({ onToggleMobileMenu }: TopbarProps) {
             </div>
           </div>
         )}
+        </div>
       </div>
     </header>
   );

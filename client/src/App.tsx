@@ -34,9 +34,9 @@ import { PurchaseOrdersListPage } from './pages/purchase-orders/PurchaseOrdersLi
 import { InvoicesListPage } from './pages/invoices/InvoicesListPage';
 import { InvoiceDocumentPage } from './pages/invoices/InvoiceDocumentPage';
 
-// Placeholders for Later Weeks (Week 4)
-import { ReportsPage } from './pages/placeholders/ReportsPage';
-import { ActivityPage } from './pages/placeholders/ActivityPage';
+// Active Functional Pages (Week 4 - Reports, Analytics & Activity Logs)
+import { ReportsPage } from './pages/reports/ReportsPage';
+import { ActivityTimelinePage } from './pages/activity/ActivityTimelinePage';
 
 // Error & Status Pages
 import { ForbiddenPage } from './pages/ForbiddenPage';
@@ -154,7 +154,7 @@ export function App() {
                     }
                   >
                     <Route path="/reports" element={<ReportsPage />} />
-                    <Route path="/activity" element={<ActivityPage />} />
+                    <Route path="/activity" element={<ActivityTimelinePage />} />
                   </Route>
                 </Route>
               </Route>

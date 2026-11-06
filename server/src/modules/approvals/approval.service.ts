@@ -12,6 +12,7 @@ import {
   InvalidStateTransitionError,
 } from '../../lib/errors.js';
 import { AuditService } from '../audit/audit.service.js';
+import { NotificationService } from '../notifications/notification.service.js';
 import {
   DecideApprovalInput,
   RejectApprovalInput,
@@ -432,6 +433,28 @@ export class ApprovalService {
         },
       });
 
+      // Trigger notifications for requester and vendor
+      await NotificationService.createNotification({
+        userId: approval.requestedById,
+        title: `Approval Granted: ${approval.rfq.code}`,
+        message: `Procurement request approved. Purchase Order ${po?.poNumber || ''} generated.`,
+        type: 'APPROVAL_DECIDED',
+        entityType: 'PURCHASE_ORDER',
+        entityId: po?.id,
+        link: po ? `/purchase-orders/${po.id}` : `/approvals/${id}`,
+      });
+
+      if (po) {
+        await NotificationService.notifyVendorMembers(approval.quotation.vendorId, {
+          title: `Purchase Order Issued: ${po.poNumber}`,
+          message: `Your quotation for ${approval.rfq.title} was approved. Purchase order has been issued.`,
+          type: 'PO_GENERATED',
+          entityType: 'PURCHASE_ORDER',
+          entityId: po.id,
+          link: `/purchase-orders/${po.id}`,
+        });
+      }
+
       return {
         approval: updatedApproval,
         purchaseOrder: po,
@@ -515,6 +538,17 @@ export class ApprovalService {
           quotationId: approval.quotationId,
           remarks: input.remarks,
         },
+      });
+
+      // Notify requester
+      await NotificationService.createNotification({
+        userId: approval.requestedById,
+        title: `Approval Rejected: ${approval.rfq.code}`,
+        message: `Procurement request rejected. Remarks: ${input.remarks}`,
+        type: 'APPROVAL_DECIDED',
+        entityType: 'APPROVAL',
+        entityId: id,
+        link: `/approvals/${id}`,
       });
 
       return updatedApproval;

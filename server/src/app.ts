@@ -83,5 +83,17 @@ app.use('/api/v1/purchase-orders', purchaseOrderRouter);
 import { invoiceRouter } from './modules/invoices/invoice.routes.js';
 app.use('/api/v1/invoices', invoiceRouter);
 
+// Week 4 Notification Routes
+import { notificationRouter } from './modules/notifications/notification.routes.js';
+app.use('/api/v1/notifications', notificationRouter);
+
+// Week 4 Audit & Activity Timeline Routes
+import { auditRouter } from './modules/audit/audit.routes.js';
+app.use('/api/v1/audit', auditRouter);
+
+// Week 4 Reports & Analytics Routes
+import { reportsRouter } from './modules/reports/reports.routes.js';
+app.use('/api/v1/reports', reportsRouter);
+
 // Central error handler
 app.use(errorHandler);

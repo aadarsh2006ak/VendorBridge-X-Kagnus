@@ -10,6 +10,7 @@ import {
 import { computeQuotationTotals } from './quotation.calculator.js';
 import { UpsertQuotationInput } from './quotation.schemas.js';
 import { AuditService } from '../audit/audit.service.js';
+import { NotificationService } from '../notifications/notification.service.js';
 import { QuotationStatus, RfqStatus, VendorStatus } from '@prisma/client';
 
 export class QuotationService {
@@ -260,6 +261,17 @@ export class QuotationService {
           itemsCount: quotation.items.length,
         },
       });
+
+      if (isSubmittingNow) {
+        await NotificationService.notifyProcurementStaff({
+          title: `Quotation Received: ${rfq.code}`,
+          message: `${vendor.name} submitted a quotation (₹${quotation.grandTotal.toString()}) for ${rfq.title}.`,
+          type: 'QUOTATION_SUBMITTED',
+          entityType: 'QUOTATION',
+          entityId: quotation.id,
+          link: `/rfqs/${rfqId}/comparison`,
+        });
+      }
 
       return quotation;
     });

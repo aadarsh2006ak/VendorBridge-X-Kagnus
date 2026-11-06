@@ -7,6 +7,7 @@ import {
 } from '../../lib/errors.js';
 import { RfqService } from '../rfqs/rfq.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { NotificationService } from '../notifications/notification.service.js';
 import { ApprovalService } from '../approvals/approval.service.js';
 import { QuotationStatus, RfqStatus, VendorStatus } from '@prisma/client';
 
@@ -338,6 +339,15 @@ export class ComparisonService {
           vendorName: quotation.vendor.name,
           grandTotal: quotation.grandTotal.toString(),
         },
+      });
+
+      await NotificationService.notifyRole('MANAGER', {
+        title: `Approval Required: ${rfq.code}`,
+        message: `Quotation from ${quotation.vendor.name} selected for ${rfq.title}. Manager review requested.`,
+        type: 'APPROVAL_REQUIRED',
+        entityType: 'APPROVAL',
+        entityId: rfqId,
+        link: `/approvals/by-rfq/${rfqId}`,
       });
 
       return updatedRfq;

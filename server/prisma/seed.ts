@@ -7,6 +7,7 @@ async function main() {
   console.log('🌱 Starting VendorBridge database seed...');
 
   // Clean existing data for clean idempotent seed
+  await prisma.notification.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.session.deleteMany();
   await prisma.passwordResetToken.deleteMany();
@@ -964,6 +965,175 @@ async function main() {
   }
 
   console.log('✅ Seeded Week 3 Approvals, Purchase Orders (PO-2025-0068), and Invoices (INV-2025-0001)!');
+
+  // ==========================================
+  // 5. SEED WEEK 4: NOTIFICATIONS & AUDIT LOGS
+  // ==========================================
+  console.log('🌱 Seeding Week 4 Notifications, Audit Timeline & Analytics trends...');
+
+  const activeRfq = (await prisma.rfq.findFirst({ where: { code: 'RFQ-2026-0002' } })) || rfq1;
+
+  // Seed Notifications
+  await prisma.notification.createMany({
+    data: [
+      {
+        userId: managerUser.id,
+        title: `Approval Required: ${activeRfq.code}`,
+        message: 'Quotation from Infra Supplies selected for Modern Workstations. Manager L2 sign-off requested.',
+        type: 'APPROVAL_REQUIRED',
+        entityType: 'APPROVAL',
+        entityId: activeRfq.id,
+        link: `/approvals/by-rfq/${activeRfq.id}`,
+        isRead: false,
+        createdAt: new Date(Date.now() - 15 * 60 * 1000), // 15 mins ago
+      },
+      {
+        userId: managerUser.id,
+        title: 'Quarterly Procurement Budget Allocated',
+        message: 'Q4 infrastructure capital expenditure budget has been officially approved and released.',
+        type: 'SYSTEM',
+        isRead: true,
+        readAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+        createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000),
+      },
+      {
+        userId: officerUser.id,
+        title: `Quotation Received: ${activeRfq.code}`,
+        message: 'Infra Supplies Pvt Ltd submitted an official quotation (₹2,00,010.00).',
+        type: 'QUOTATION_SUBMITTED',
+        entityType: 'QUOTATION',
+        link: `/rfqs/${activeRfq.id}/comparison`,
+        isRead: true,
+        readAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
+        createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
+      },
+      {
+        userId: officerUser.id,
+        title: 'Purchase Order Issued: PO-2025-0068',
+        message: 'Official PO generated following approval for Modern Office Workstations.',
+        type: 'PO_GENERATED',
+        entityType: 'PURCHASE_ORDER',
+        link: `/purchase-orders`,
+        isRead: false,
+        createdAt: new Date(Date.now() - 30 * 60 * 1000),
+      },
+      {
+        userId: vendorUser.id,
+        title: 'Purchase Order Issued: PO-2025-0068',
+        message: 'Your quotation for Modern Workstations was approved. PO-2025-0068 has been issued.',
+        type: 'PO_GENERATED',
+        entityType: 'PURCHASE_ORDER',
+        link: `/purchase-orders`,
+        isRead: false,
+        createdAt: new Date(Date.now() - 25 * 60 * 1000),
+      },
+      {
+        userId: vendorUser.id,
+        title: 'Invoice Ready: INV-2025-0001',
+        message: 'Official billing invoice generated for Purchase Order PO-2025-0068.',
+        type: 'INVOICE_GENERATED',
+        entityType: 'INVOICE',
+        link: `/invoices`,
+        isRead: false,
+        createdAt: new Date(Date.now() - 10 * 60 * 1000),
+      },
+      {
+        userId: adminUser.id,
+        title: 'High-Value Order Issued: PO-2025-0068',
+        message: 'Purchase Order exceeding ₹2,00,000 threshold issued to Infra Supplies Pvt Ltd.',
+        type: 'PO_GENERATED',
+        entityType: 'PURCHASE_ORDER',
+        link: `/purchase-orders`,
+        isRead: false,
+        createdAt: new Date(Date.now() - 20 * 60 * 1000),
+      },
+    ],
+  });
+
+  // Seed Chronological Forensic Audit Logs
+  await prisma.auditLog.createMany({
+    data: [
+      {
+        actorId: adminUser.id,
+        action: 'AUTH_LOGIN',
+        entityType: 'User',
+        entityId: adminUser.id,
+        metadata: { method: 'password', role: 'ADMIN' },
+        ip: '127.0.0.1',
+        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      },
+      {
+        actorId: adminUser.id,
+        action: 'VENDOR_CREATED',
+        entityType: 'Vendor',
+        entityId: infraVendor?.id,
+        metadata: { name: 'Infra Supplies Pvt Ltd', category: 'Furniture' },
+        ip: '127.0.0.1',
+        createdAt: new Date(Date.now() - 20 * 60 * 60 * 1000),
+      },
+      {
+        actorId: officerUser.id,
+        action: 'RFQ_CREATED',
+        entityType: 'Rfq',
+        entityId: activeRfq.id,
+        metadata: { code: 'RFQ-2025-0002', title: 'Modern Ergonomic Office Chairs & Workstations' },
+        ip: '127.0.0.1',
+        createdAt: new Date(Date.now() - 16 * 60 * 60 * 1000),
+      },
+      {
+        actorId: officerUser.id,
+        action: 'RFQ_PUBLISHED',
+        entityType: 'Rfq',
+        entityId: activeRfq.id,
+        metadata: { code: 'RFQ-2025-0002', vendorsCount: 3 },
+        ip: '127.0.0.1',
+        createdAt: new Date(Date.now() - 15 * 60 * 60 * 1000),
+      },
+      {
+        actorId: vendorUser.id,
+        action: 'QUOTATION_SUBMITTED',
+        entityType: 'Quotation',
+        metadata: { rfqCode: 'RFQ-2025-0002', grandTotal: '200010.00', vendor: 'Infra Supplies Pvt Ltd' },
+        ip: '127.0.0.1',
+        createdAt: new Date(Date.now() - 10 * 60 * 60 * 1000),
+      },
+      {
+        actorId: officerUser.id,
+        action: 'QUOTATION_SELECTED',
+        entityType: 'Rfq',
+        entityId: activeRfq.id,
+        metadata: { rfqCode: 'RFQ-2025-0002', vendor: 'Infra Supplies Pvt Ltd', grandTotal: '200010.00' },
+        ip: '127.0.0.1',
+        createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000),
+      },
+      {
+        actorId: managerUser.id,
+        action: 'APPROVAL_APPROVED',
+        entityType: 'ApprovalRequest',
+        metadata: { rfqCode: 'RFQ-2025-0002', remarks: 'Budget verified against Q4 infrastructure allocation.' },
+        ip: '127.0.0.1',
+        createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
+      },
+      {
+        actorId: managerUser.id,
+        action: 'PO_GENERATED',
+        entityType: 'PurchaseOrder',
+        metadata: { poNumber: 'PO-2025-0068', vendor: 'Infra Supplies Pvt Ltd', grandTotal: '200010.00' },
+        ip: '127.0.0.1',
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      },
+      {
+        actorId: officerUser.id,
+        action: 'INVOICE_GENERATED',
+        entityType: 'Invoice',
+        metadata: { invoiceNumber: 'INV-2025-0001', poNumber: 'PO-2025-0068', grandTotal: '200010.00' },
+        ip: '127.0.0.1',
+        createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
+      },
+    ],
+  });
+
+  console.log('✅ Seeded Week 4 Notifications and Forensic Audit Timeline!');
   console.log('🎉 Database seed completed successfully!');
 }
 

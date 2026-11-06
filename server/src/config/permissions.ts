@@ -46,6 +46,17 @@ export const PERMISSIONS = {
   'invoice:create': ['ADMIN', 'PROCUREMENT_OFFICER', 'MANAGER', 'VENDOR'],
   'invoice:markPaid': ['ADMIN', 'MANAGER'],
   'invoice:email': ['ADMIN', 'PROCUREMENT_OFFICER', 'MANAGER'],
+
+  // Week 4 Notifications
+  'notification:read': ['ADMIN', 'PROCUREMENT_OFFICER', 'MANAGER', 'VENDOR'],
+  'notification:update': ['ADMIN', 'PROCUREMENT_OFFICER', 'MANAGER', 'VENDOR'],
+
+  // Week 4 Audit & Activity Logs
+  'audit:read': ['ADMIN', 'PROCUREMENT_OFFICER', 'MANAGER'],
+
+  // Week 4 Reports & Analytics
+  'reports:read': ['ADMIN', 'PROCUREMENT_OFFICER', 'MANAGER'],
+  'reports:export': ['ADMIN', 'PROCUREMENT_OFFICER', 'MANAGER'],
 } as const;
 
 export type PermissionKey = keyof typeof PERMISSIONS;
