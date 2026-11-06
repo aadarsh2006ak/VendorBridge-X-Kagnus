@@ -36,12 +36,12 @@ export function errorHandler(
     return;
   }
 
-  // Unhandled / unexpected error (never leak stack trace in response)
+  // Unhandled / unexpected error
   console.error('[Unhandled Error]:', err);
   res.status(500).json({
     error: {
       code: 'INTERNAL_ERROR',
-      message: 'An unexpected internal error occurred',
+      message: err.message || 'An unexpected internal error occurred',
     },
   });
 }

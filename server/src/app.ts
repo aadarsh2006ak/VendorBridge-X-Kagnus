@@ -41,9 +41,19 @@ app.use(csrfProtection);
 app.get('/api/v1/health', async (_req, res, next) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
+    let userCount = -1;
+    let tablesStatus = 'missing';
+    try {
+      userCount = await prisma.user.count();
+      tablesStatus = 'ready';
+    } catch (err: any) {
+      tablesStatus = err?.message || 'table_not_found';
+    }
     res.status(200).json({
       status: 'ok',
       database: 'connected',
+      tablesStatus,
+      userCount,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
