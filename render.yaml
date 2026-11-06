@@ -1,7 +1,7 @@
 databases:
   - name: vendorbridge-db
     databaseName: vendorbridge
-    user: postgres
+    user: vendorbridge_user
     plan: free
     region: oregon
 
@@ -27,3 +27,4 @@ services:
         value: ADMIN_SECRET_INVITE_2026
       - key: COOKIE_SECURE
         value: true
+
