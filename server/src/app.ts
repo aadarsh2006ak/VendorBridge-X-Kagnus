@@ -17,8 +17,8 @@ const allowedOrigins = [env.CLIENT_ORIGIN, 'http://localhost:5173', 'http://loca
 app.use(
   cors({
     origin: (origin, callback) => {
-      // allow requests with no origin (like mobile apps or curl)
-      if (!origin || allowedOrigins.includes(origin)) {
+      // allow requests with no origin (like mobile apps or curl) or vercel preview/prod domains
+      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
