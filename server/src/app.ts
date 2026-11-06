@@ -1,3 +1,4 @@
+
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -17,8 +18,13 @@ const allowedOrigins = [env.CLIENT_ORIGIN, 'http://localhost:5173', 'http://loca
 app.use(
   cors({
     origin: (origin, callback) => {
-      // allow requests with no origin (like mobile apps or curl) or vercel preview/prod domains
-      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      // allow requests with no origin or matching allowed, vercel, or onrender domains
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.vercel.app') ||
+        origin.endsWith('.onrender.com')
+      ) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
