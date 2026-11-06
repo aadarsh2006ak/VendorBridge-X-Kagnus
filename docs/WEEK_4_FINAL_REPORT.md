@@ -182,3 +182,4 @@ npm run dev
 1. **Email SMTP Provider:** Currently configured to automatically fallback to Nodemailer test accounts (Ethereal) in development environments. For production environments, configure Amazon SES, SendGrid, or Resend credentials in `server/.env`.
 2. **Real-time WebSockets:** Notifications currently poll on a 30-second interval; future iterations can integrate WebSocket (Socket.io) or Server-Sent Events (SSE) for instant push delivery.
 3. **Multi-Currency:** Financial figures are formatted in Indian Rupees (INR, ₹). Multi-currency conversion rates can be added for international procurement.
+
