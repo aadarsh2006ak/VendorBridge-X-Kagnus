@@ -24,7 +24,7 @@ export class NotificationController {
 
   public static async markAsRead(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const updated = await NotificationService.markAsRead(id, req.user!.id);
       res.status(200).json({ success: true, data: updated });
     } catch (error) {

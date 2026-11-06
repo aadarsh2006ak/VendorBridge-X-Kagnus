@@ -20,7 +20,7 @@ export class InvoiceController {
 
   public static async getInvoiceById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const invoice = await InvoiceService.getInvoiceById(id, req.user!);
       res.status(200).json(invoice);
     } catch (error) {
@@ -43,7 +43,7 @@ export class InvoiceController {
 
   public static async updateStatus(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const input = updateInvoiceStatusSchema.parse(req.body);
       const invoice = await InvoiceService.updateStatus(id, input, req.user!, req.ip);
       res.status(200).json({
@@ -57,7 +57,7 @@ export class InvoiceController {
 
   public static async downloadPdf(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { buffer, filename } = await InvoiceService.getPdfBuffer(id, req.user!);
 
       res.setHeader('Content-Type', 'application/pdf');
@@ -70,7 +70,7 @@ export class InvoiceController {
 
   public static async emailInvoice(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const input = emailInvoiceSchema.parse(req.body);
       const result = await InvoiceService.emailInvoice(id, input, req.user!, req.ip);
 

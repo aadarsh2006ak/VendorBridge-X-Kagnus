@@ -95,5 +95,27 @@ app.use('/api/v1/audit', auditRouter);
 import { reportsRouter } from './modules/reports/reports.routes.js';
 app.use('/api/v1/reports', reportsRouter);
 
+// Serve Client SPA in Production / Render full-stack deployments
+import path from 'path';
+import fs from 'fs';
+
+const possibleClientPaths = [
+  path.resolve(process.cwd(), '../client/dist'),
+  path.resolve(process.cwd(), 'client/dist'),
+  path.resolve(process.cwd(), 'dist/client'),
+];
+
+const clientDistPath = possibleClientPaths.find((p) => fs.existsSync(p));
+
+if (clientDistPath) {
+  app.use(express.static(clientDistPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
+
 // Central error handler
 app.use(errorHandler);

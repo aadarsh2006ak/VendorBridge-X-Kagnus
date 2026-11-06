@@ -15,7 +15,7 @@ export class PurchaseOrderController {
 
   public static async getPurchaseOrderById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const po = await PurchaseOrderService.getPurchaseOrderById(id, req.user!);
       res.status(200).json(po);
     } catch (error) {

@@ -19,7 +19,7 @@ export class ApprovalController {
 
   public static async getApprovalById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const approval = await ApprovalService.getApprovalById(id);
       res.status(200).json(approval);
     } catch (error) {
@@ -29,7 +29,7 @@ export class ApprovalController {
 
   public static async getApprovalByRfqId(req: Request, res: Response, next: NextFunction) {
     try {
-      const { rfqId } = req.params;
+      const rfqId = req.params.rfqId as string;
       const approval = await ApprovalService.getApprovalByRfqId(rfqId);
       res.status(200).json(approval);
     } catch (error) {
@@ -39,7 +39,7 @@ export class ApprovalController {
 
   public static async approve(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const input = decideApprovalSchema.parse(req.body);
       const result = await ApprovalService.approve(
         id,
@@ -58,7 +58,7 @@ export class ApprovalController {
 
   public static async reject(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const input = rejectApprovalSchema.parse(req.body);
       const result = await ApprovalService.reject(
         id,

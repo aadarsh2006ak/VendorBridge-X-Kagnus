@@ -271,7 +271,7 @@ export class ReportsService {
         const headers = ['PO Number', 'Issue Date', 'Vendor', 'RFQ Code', 'RFQ Title', 'Line Items Count', 'Subtotal (INR)', 'Tax Amount (INR)', 'Grand Total (INR)', 'Status'];
         const rows = pos.map((po) => [
           `"${po.poNumber}"`,
-          po.issueDate ? po.issueDate.toISOString().split('T')[0] : po.createdAt.toISOString().split('T')[0],
+          po.poDate ? po.poDate.toISOString().split('T')[0] : po.createdAt.toISOString().split('T')[0],
           `"${po.vendor?.name || 'N/A'}"`,
           `"${po.rfq?.code || 'N/A'}"`,
           `"${po.rfq?.title || 'N/A'}"`,
@@ -308,7 +308,7 @@ export class ReportsService {
           Number(inv.sgstAmount).toFixed(2),
           Number(inv.grandTotal).toFixed(2),
           inv.status,
-          `"${inv.paymentReference || 'N/A'}"`,
+          `"${inv.paidAt ? 'SETTLED' : 'N/A'}"`,
         ]);
         return {
           filename: `Invoices_Registry_${new Date().toISOString().split('T')[0]}.csv`,
