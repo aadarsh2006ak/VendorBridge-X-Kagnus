@@ -119,12 +119,22 @@ const possibleClientPaths = [
   path.resolve(process.cwd(), '../client/dist'),
   path.resolve(process.cwd(), 'client/dist'),
   path.resolve(process.cwd(), 'dist/client'),
+  path.resolve(__dirname, '../../../client/dist'),
+  path.resolve(__dirname, '../../client/dist'),
 ];
 
 const clientDistPath = possibleClientPaths.find((p) => fs.existsSync(p));
 
 if (clientDistPath) {
-  app.use(express.static(clientDistPath));
+  app.use(
+    express.static(clientDistPath, {
+      maxAge: '1d',
+      setHeaders: (res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+      },
+    })
+  );
+
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api/')) {
       return next();
